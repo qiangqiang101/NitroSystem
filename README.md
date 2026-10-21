@@ -105,17 +105,6 @@ cmake --build build --config Release
 powershell -ExecutionPolicy Bypass -File scripts\package.ps1 -AzimuthDir "D:\Games\FH2\azimuth-windows" -GameMountDir "D:\Games\FH2\Anthem_1.0.0.64_x64__8wekyb3d8bbwe\Mount"
 ```
 
-### Publishing a release
-
-Publishing a release on GitHub (**Releases > Draft a new release > Publish release**) builds the mod on GitHub and attaches `FnFNitro-<tag>.zip` to that release. Nothing builds on ordinary pushes or pull requests. The workflow is `.github\workflows\release.yml`; it checks out the repository with the platform submodule, builds Release x64, and runs `scripts\package-release.ps1`, which you can also run yourself after a build:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\package-release.ps1 -Tag v1.0.0
-# -> release\FnFNitro-v1.0.0.zip
-```
-
-The zip leaves out `dist\mediaoverride\stripped\gamedbRC.slt`: that is a copy of the game's own database, and the platform rebuilds it at startup from the mod's changes.
-
 ### Local deploy script
 
 `package.ps1` builds, fills `dist\`, and deploys the DLL, the sounds and the `mediaoverride` files. Both path parameters default to the author's folders (`D:\Games\FH2\...`), so pass your own unless yours match. If the game is running it can't overwrite the DLL, so close the game and run the script again.

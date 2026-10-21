@@ -1,16 +1,27 @@
 name: Release build
 
-# Runs only when a release is published on GitHub; nothing builds on ordinary pushes or pull requests.
+# Builds when a release is published on GitHub. It can also be started by hand from the Actions tab
+# (Run workflow) to test the build: that run attaches the zip to the run page instead of to a release.
+# Nothing builds on ordinary pushes or pull requests.
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Version label for the zip name (manual runs only)"
+        required: false
+        default: "manual-test"
 
 permissions:
-  contents: write   # to attach the zip to the release
+  contents: write   # to attach the zip to a release
 
 jobs:
   build:
     runs-on: windows-latest
+    env:
+      # the release's tag, or the label typed into a manual run
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag || 'manual-test' }}
     steps:
       - name: Check out (with the platform submodule)
         uses: actions/checkout@v4
@@ -25,15 +36,22 @@ jobs:
 
       - name: Package
         shell: pwsh
-        env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: ./scripts/package-release.ps1 -Tag $env:RELEASE_TAG
 
       - name: Attach the zip to the release
+        if: github.event_name == 'release'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           $safe = $env:RELEASE_TAG -replace '[^A-Za-z0-9._-]', '-'
           gh release upload "$env:RELEASE_TAG" "release/FnFNitro-$safe.zip" --clobber
+
+      - name: Keep the zip as a workflow artifact (manual runs)
+        if: github.event_name != 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: FnFNitro-manual-build-${{ github.run_number }}
+          path: release/FnFNitro-*.zip
+          if-no-files-found: error
+          retention-days: 14
