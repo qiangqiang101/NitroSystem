@@ -1163,9 +1163,9 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
     FH2ModInfo info{};
     info.size             = sizeof(info);
     info.name             = "NitroSystem";
-    info.version          = FNFNITRO_VERSION;
-    info.github_repo      = "qiangqiang101/FnFNitroInFH2";
-    info.platform_version = FH2MOD_PLATFORM_VERSION;
+    info.version          = "1.0.0";
+    info.github_repo      = "qiangqiang101/NitroSystem";
+    info.platform_version = "1.0.0";
     info.check_updates    = 0;
     info.description      = "Fast & Furious Nitro system ported to Forza Horizon 2 (All Cars - LB to activate)";
 
