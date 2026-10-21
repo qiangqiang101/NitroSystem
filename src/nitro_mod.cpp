@@ -93,6 +93,191 @@ static std::atomic<uint64_t> g_physics_frames{0};
 static std::atomic<uint64_t> g_boosted_frames{0};
 static std::atomic<uint64_t> g_last_physics_tick{0};
 static void* g_player_cardynamics = nullptr;
+static std::atomic<uint64_t> g_last_speedo_tick{0}; // HUD speedometer only ticks while driving with the HUD up
+
+// Telling the player's car from AI racers and traffic. Every simulated car has [+0x178] == 1, so that
+// flag can't. The world manager (CWorldCollObjMan::Update, RVA 0x384C00, first argument) holds the
+// player car's position at +0x4F0. We learn which offset inside CCarDynamics holds a world position by
+// finding the one that keeps landing on it, then treat the nearest car to it as the player's.
+static float g_player_pos[3] = {0.0f, 0.0f, 0.0f};
+static std::atomic<uint64_t> g_player_pos_tick{0};
+
+typedef void (*MgrUpdateFn)(uint8_t* mgr, float a, float b);
+static MgrUpdateFn g_orig_mgr_update = nullptr;
+
+static void detour_mgr_update(uint8_t* mgr, float a, float b) {
+    if (g_orig_mgr_update) {
+        g_orig_mgr_update(mgr, a, b);
+    }
+    if (!mgr) return;
+
+    __try {
+        const float* p = (const float*)(mgr + 0x4F0);
+        if (std::isfinite(p[0]) && std::isfinite(p[1]) && std::isfinite(p[2])) {
+            g_player_pos[0] = p[0];
+            g_player_pos[1] = p[1];
+            g_player_pos[2] = p[2];
+            g_player_pos_tick.store(GetTickCount64());
+        }
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+    }
+}
+
+static const int kScanBytes = 0x400;
+static const float kCalibRadius2 = 8.0f * 8.0f;   // player position can lag the car by a frame
+static const float kPlayerRadius2 = 25.0f * 25.0f;
+static std::atomic<int> g_pos_offset{-1};          // offset of the world position inside CCarDynamics
+static std::atomic<int> g_calib_report{0};         // 0 none, 1 learned, 2 failed (logged by the worker)
+static std::atomic<int> g_calib_best_hits{0};
+
+struct SeenCar {
+    void* ptr;
+    uint64_t tick;
+};
+static SeenCar g_seen[32];
+
+static void note_car(void* car, uint64_t now) {
+    SeenCar* slot = &g_seen[0];
+    for (auto& s : g_seen) {
+        if (s.ptr == car) { slot = &s; break; }
+        if (s.tick < slot->tick) slot = &s;
+    }
+    slot->ptr = car;
+    slot->tick = now;
+}
+
+static bool car_dist2(const void* car, int off, float* out) {
+    const float* v = (const float*)((uintptr_t)car + off);
+    float dx = v[0] - g_player_pos[0], dy = v[1] - g_player_pos[1], dz = v[2] - g_player_pos[2];
+    float d2 = dx * dx + dy * dy + dz * dz;
+    if (!std::isfinite(d2)) return false;
+    *out = d2;
+    return true;
+}
+
+// Only runs on the physics thread: finds the offset whose float triple keeps matching the player position.
+static void calibrate_position_offset(void* car, uint64_t now) {
+    static uint32_t hits[kScanBytes / 4];
+    static int samples = 0;
+    if (now - g_player_pos_tick.load() > 200) return;
+
+    for (int i = 0; i < kScanBytes / 4 - 2; ++i) {
+        float d2;
+        if (car_dist2(car, i * 4, &d2) && d2 < kCalibRadius2) ++hits[i];
+    }
+    if (++samples < 4000) return;
+
+    int best = 0;
+    for (int i = 1; i < kScanBytes / 4 - 2; ++i) {
+        if (hits[i] > hits[best]) best = i;
+    }
+    g_calib_best_hits.store((int)hits[best]);
+    if (hits[best] >= 150) {
+        g_pos_offset.store(best * 4);
+        g_calib_report.store(1);
+    } else {
+        g_calib_report.store(2);
+        samples = 0;
+        for (auto& h : hits) h = 0;
+    }
+}
+
+// True if this car is the one nearest the player position. Until the offset is learned, falls back to
+// the old behaviour (any simulated car).
+static bool is_player_car(void* car, uint64_t now) {
+    int off = g_pos_offset.load();
+    if (off < 0) return true;
+    if (now - g_player_pos_tick.load() > 200) return false;
+
+    float mine;
+    if (!car_dist2(car, off, &mine) || mine > kPlayerRadius2) return false;
+    for (const auto& s : g_seen) {
+        if (!s.ptr || s.ptr == car || now - s.tick > 150) continue;
+        float other;
+        if (car_dist2(s.ptr, off, &other) && other < mine) return false;
+    }
+    return true;
+}
+
+// Keeping the boost on the ground. Per-wheel contact isn't known, so: learn which world axis is "up",
+// treat a free-fall signature on it as airborne, and push along the horizontal part of the nose only.
+static std::atomic<int> g_up_axis{-1};     // 0..2 once learned
+static std::atomic<int> g_up_report{0};    // 1 = just learned (logged by the worker)
+
+// The vertical axis is the one the player's position moves least along, since roads are flatter than
+// they are long. Vote once a second while the car is covering ground.
+static void learn_up_axis(const void* car, uint64_t now) {
+    int off = g_pos_offset.load();
+    if (off < 0 || g_up_axis.load() >= 0) return;
+
+    static uint64_t win_start = 0;
+    static float lo[3], hi[3];
+    static int votes[3] = {0, 0, 0};
+
+    const float* p = (const float*)((uintptr_t)car + off);
+    if (!std::isfinite(p[0]) || !std::isfinite(p[1]) || !std::isfinite(p[2])) return;
+
+    if (win_start == 0 || now - win_start > 1000) {
+        if (win_start != 0) {
+            float r[3] = {hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]};
+            int flattest = 0;
+            for (int i = 1; i < 3; ++i) if (r[i] < r[flattest]) flattest = i;
+            float mid = 0.0f; // second largest range = the smaller of the two horizontal axes
+            for (int i = 0; i < 3; ++i) {
+                if (i == flattest) continue;
+                if (mid == 0.0f || r[i] < mid) mid = r[i];
+            }
+            if (mid > 40.0f && r[flattest] < 0.5f * mid) ++votes[flattest];
+
+            int total = votes[0] + votes[1] + votes[2];
+            if (total >= 3) {
+                int best = 0;
+                for (int i = 1; i < 3; ++i) if (votes[i] > votes[best]) best = i;
+                if (votes[best] * 3 >= total * 2) {
+                    g_up_axis.store(best);
+                    g_up_report.store(1);
+                }
+            }
+        }
+        win_start = now;
+        for (int i = 0; i < 3; ++i) lo[i] = hi[i] = p[i];
+    } else {
+        for (int i = 0; i < 3; ++i) {
+            if (p[i] < lo[i]) lo[i] = p[i];
+            if (p[i] > hi[i]) hi[i] = p[i];
+        }
+    }
+}
+
+// Airborne = vertical acceleration near -g for a couple of ticks in a row. Called every tick for the
+// player's car, with the velocity as the physics left it (before our own push, which is horizontal).
+static bool update_grounded(void* car, const float* vel, float dt, uint64_t now) {
+    int up = g_up_axis.load();
+    if (up < 0) return true;
+
+    static void* tracked = nullptr;
+    static float prev_vy = 0.0f;
+    static uint64_t prev_t = 0;
+    static int fall_ticks = 0;
+    static int grace = 0;
+
+    float vy = vel[up];
+    float dt_use = (dt > 0.001f && dt < 0.1f) ? dt : 0.01667f;
+    if (car != tracked || now - prev_t > 100) {
+        tracked = car;
+        fall_ticks = 0;
+        grace = 0;
+    } else {
+        float ay = (vy - prev_vy) / dt_use;
+        fall_ticks = (ay < -6.0f) ? fall_ticks + 1 : 0;
+    }
+    prev_vy = vy;
+    prev_t = now;
+
+    if (fall_ticks >= 2) grace = 6;        // airborne; keep off the throttle a moment after landing too
+    else if (grace > 0) --grace;
+    return fall_ticks < 2 && grace == 0;
+}
 
 static bool detour_cardynamics(void* this_ptr, void* rdx, void* r8, uint32_t r9, float dt) {
     bool res = false;
@@ -105,31 +290,58 @@ static bool detour_cardynamics(void* this_ptr, void* rdx, void* r8, uint32_t r9,
     if (!this_ptr) return res;
 
     __try {
-        // In CCarDynamics, [this_ptr + 0x178] == 1 identifies the local player car
-        int is_player = *(const int*)((uintptr_t)this_ptr + 0x178);
-        if (is_player == 1) {
-            g_player_cardynamics = this_ptr;
-            g_last_physics_tick.store(GetTickCount64());
+        // In CCarDynamics, [this_ptr + 0x178] == 1 marks a simulated car (the player's, AI racers and traffic)
+        int is_sim = *(const int*)((uintptr_t)this_ptr + 0x178);
+        if (is_sim == 1) {
+            uint64_t now = GetTickCount64();
+            g_last_physics_tick.store(now);
+            note_car(this_ptr, now);
+            if (g_pos_offset.load() < 0) calibrate_position_offset(this_ptr, now);
 
-            if (g_enabled.load() && g_nitro_active.load()) {
+            bool mine = is_player_car(this_ptr, now);
+            if (mine) g_player_cardynamics = this_ptr;
+
+            // In CCarDynamics:
+            // [this_ptr + 0x40] = Orientation forward vector (float[3])
+            // [this_ptr + 0x50] = Vehicle linear velocity vector (float[3])
+            const float* fwd = (const float*)((uintptr_t)this_ptr + 0x40);
+            float* vel = (float*)((uintptr_t)this_ptr + 0x50);
+
+            bool grounded = true;
+            if (mine) {
+                learn_up_axis(this_ptr, now);
+                grounded = update_grounded(this_ptr, vel, dt, now);
+            }
+
+            if (mine && grounded && g_enabled.load() && g_nitro_active.load()) {
                 float boost = g_current_boost.load();
                 if (boost > 1.0f) {
-                // In CCarDynamics:
-                // [this_ptr + 0x40] = Orientation forward vector (float[3])
-                // [this_ptr + 0x50] = Vehicle linear velocity vector (float[3])
-                const float* fwd = (const float*)((uintptr_t)this_ptr + 0x40);
-                float* vel = (float*)((uintptr_t)this_ptr + 0x50);
+                    // Push along the horizontal part of the nose so a pitched-up car isn't thrown skyward
+                    float dir[3] = {fwd[0], fwd[1], fwd[2]};
+                    bool apply = true;
+                    int up = g_up_axis.load();
+                    if (up >= 0) {
+                        dir[up] = 0.0f;
+                        float len = sqrtf(dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2]);
+                        if (len < 0.3f) {
+                            apply = false; // nose nearly vertical
+                        } else {
+                            dir[0] /= len; dir[1] /= len; dir[2] /= len;
+                        }
+                    }
 
-                float dt_use = (dt > 0.001f && dt < 0.1f) ? dt : 0.01667f;
-                // Substantial acceleration force:
-                // At boost 3.0x: (3.0 - 1.0) * 22.0f * dt ~ 0.73 m/s/tick (~44 m/s^2 or ~4.5 Gs)
-                // At boost 10.0x: (10.0 - 1.0) * 22.0f * dt ~ 3.3 m/s/tick (~198 m/s^2 - extreme nitro rush!)
-                float impulse = (boost - 1.0f) * 22.0f * dt_use;
-                vel[0] += fwd[0] * impulse;
-                vel[1] += fwd[1] * impulse;
-                vel[2] += fwd[2] * impulse;
+                    if (apply) {
+                        float dt_use = (dt > 0.001f && dt < 0.1f) ? dt : 0.01667f;
+                        // Substantial acceleration force:
+                        // At boost 3.0x: (3.0 - 1.0) * 22.0f * dt ~ 0.73 m/s/tick (~44 m/s^2 or ~4.5 Gs)
+                        // At boost 10.0x: (10.0 - 1.0) * 22.0f * dt ~ 3.3 m/s/tick (~198 m/s^2 - extreme nitro rush!)
+                        float impulse = (boost - 1.0f) * 22.0f * dt_use;
+                        vel[0] += dir[0] * impulse;
+                        vel[1] += dir[1] * impulse;
+                        vel[2] += dir[2] * impulse;
 
-                g_boosted_frames.fetch_add(1, std::memory_order_relaxed);
+                        g_boosted_frames.fetch_add(1, std::memory_order_relaxed);
+                    }
                 }
             }
         }
@@ -157,8 +369,9 @@ static void detour_backfire_prep(void* r15) {
         uintptr_t car_pres = (uintptr_t)r15 - 0x18a0;
         void* car_dyn = *(void**)(car_pres + 0x10);
 
-        bool is_target = (!g_player_cardynamics || car_dyn == g_player_cardynamics);
-        if (!is_target && car_dyn) {
+        bool is_target = (car_dyn && car_dyn == g_player_cardynamics);
+        if (!is_target && car_dyn && g_pos_offset.load() < 0) {
+            // Player's car not identified yet: fall back to any simulated car
             int flag = *(const int*)((uintptr_t)car_dyn + 0x178);
             if (flag == 1) is_target = true;
         }
@@ -194,6 +407,8 @@ static void detour_speedo_tick(void* speedo, float rpm) {
     }
 
     if (!speedo || !g_game_base) return;
+
+    g_last_speedo_tick.store(GetTickCount64());
 
     __try {
         float fuel = g_current_fuel.load();
@@ -405,6 +620,16 @@ static void nitro_worker_thread() {
         g_api->log(g_mod, "Failed to create CCarDynamics hook.");
     }
 
+    // Hook CWorldCollObjMan::Update (RVA 0x384C00) to read the player's position. WreckingBall hooks it
+    // too; the platform chains hooks on the same function.
+    void* mgr_update = (void*)((uintptr_t)base + 0x384C00);
+    FH2Hook* hook_mgr = g_api->hook_function(g_mod, "CWorldCollObjMan::Update", mgr_update, (void*)detour_mgr_update, (void**)&g_orig_mgr_update);
+    if (hook_mgr && g_api->enable_hooks(g_mod, hook_mgr)) {
+        g_api->log(g_mod, "CWorldCollObjMan::Update hooked to find the player's car.");
+    } else {
+        g_api->log(g_mod, "Failed to hook CWorldCollObjMan::Update; nitro will boost every simulated car.");
+    }
+
     // Hook CarPresentation11 exhaust backfire prep (RVA 0x13B0DE6)
     void* backfire_call = (void*)((uintptr_t)base + 0x13B0DE6);
     FH2Hook* hook_bf = g_api->hook_call(g_mod, "CarPresentation11::BackfirePrep", backfire_call, (void*)detour_backfire_prep, (void**)&g_orig_backfire_prep);
@@ -452,7 +677,7 @@ static void nitro_worker_thread() {
             continue;
         }
 
-        // Poll all 4 controller ports + Keyboard for LB (Left Shoulder)
+        // Poll all 4 controller ports for LB (Left Shoulder)
         bool button_pressed = false;
         for (DWORD user_idx = 0; user_idx < 4; ++user_idx) {
             XINPUT_STATE state{};
@@ -464,19 +689,38 @@ static void nitro_worker_thread() {
             }
         }
 
-        // Support Left Shift or 'N' for keyboard players
-        if (!button_pressed) {
-            if ((GetAsyncKeyState(VK_LSHIFT) & 0x8000) || (GetAsyncKeyState('N') & 0x8000)) {
-                button_pressed = true;
-            }
-        }
-
-        // Only allow nitro activation while car physics is actively simulating
-        // (Prevents nitro triggering in Pause Menu, Map, Garage, or Loading screens)
+        // Only run while the player is actually driving: car physics is simulating (not Pause Menu,
+        // Map or Loading) and the HUD speedometer is ticking (not Garage or a car meet lobby).
         uint64_t now_ms = GetTickCount64();
         bool physics_active = (now_ms - g_last_physics_tick.load()) < 200;
-        if (!physics_active) {
-            button_pressed = false;
+        bool driving = physics_active && (now_ms - g_last_speedo_tick.load()) < 200;
+        if (!driving) {
+            // Nothing is simulated: no nitro, and the tank neither drains nor recharges.
+            if (g_nitro_active.load()) {
+                g_nitro_active.store(false);
+                g_current_boost.store(1.0f);
+                set_rumble(0, 0);
+                stop_nitro_audio();
+                active_duration = 0.0f;
+            }
+            continue;
+        }
+
+        if (g_up_report.exchange(0) == 1) {
+            snprintf(log_buf, sizeof(log_buf), "Vertical axis learned: %c. Nitro now pushes horizontally and only on the ground.",
+                     "XYZ"[g_up_axis.load()]);
+            g_api->log(g_mod, log_buf);
+        }
+
+        int report = g_calib_report.exchange(0);
+        if (report == 1) {
+            snprintf(log_buf, sizeof(log_buf), "Player car located: position at CCarDynamics+0x%X (%d hits). Nitro now only boosts your car.",
+                     g_pos_offset.load(), g_calib_best_hits.load());
+            g_api->log(g_mod, log_buf);
+        } else if (report == 2) {
+            snprintf(log_buf, sizeof(log_buf), "Could not locate the player car yet (best offset only %d hits); retrying.",
+                     g_calib_best_hits.load());
+            g_api->log(g_mod, log_buf);
         }
 
         float fuel = g_current_fuel.load();
@@ -547,7 +791,7 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
 
     FH2ModInfo info{};
     info.size             = sizeof(info);
-    info.name             = "FnFNitro";
+    info.name             = "Fast & Furious NOS in Forza Horizon 2";
     info.version          = FNFNITRO_VERSION;
     info.github_repo      = nullptr;
     info.platform_version = FH2MOD_PLATFORM_VERSION;
@@ -557,7 +801,7 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
     g_mod = api->register_mod(&info);
     if (!g_mod) return 1;
 
-    api->log(g_mod, "FnFNitro initializing (LB to boost)...");
+    api->log(g_mod, "Fast & Furious NOS initializing (LB to boost)...");
 
     // Initialize paths & load persistent settings from FnFNitro.ini
     init_paths();
@@ -582,7 +826,7 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
             s_torque.description   = "Multiplies forward acceleration while Nitro is active (Spire default: 1.6x).";
             s_torque.kind          = FH2_SETTING_SLIDER;
             s_torque.min           = 1.0f;
-            s_torque.max           = 3.0f;
+            s_torque.max           = 2.0f;
             s_torque.step          = 0.1f;
             s_torque.slider_value  = g_torque_scale.load();
             s_torque.display_scale = 1.0f;
@@ -598,7 +842,7 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
             s_dur.kind          = FH2_SETTING_SLIDER;
             s_dur.min           = 5.0f;
             s_dur.max           = 60.0f;
-            s_dur.step          = 5.0f;
+            s_dur.step          = 1.0f;
             s_dur.slider_value  = g_duration.load();
             s_dur.display_scale = 1.0f;
             s_dur.decimals      = 0;
@@ -627,8 +871,8 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
             s_recharge.description   = "Seconds of nitro restored per second while not boosting.";
             s_recharge.kind          = FH2_SETTING_SLIDER;
             s_recharge.min           = 0.0f;
-            s_recharge.max           = 5.0f;
-            s_recharge.step          = 0.2f;
+            s_recharge.max           = 1.0f;
+            s_recharge.step          = 0.1f;
             s_recharge.slider_value  = g_recharge_rate.load();
             s_recharge.display_scale = 1.0f;
             s_recharge.decimals      = 1;
@@ -645,6 +889,6 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
     // Launch background worker thread
     std::thread(nitro_worker_thread).detach();
 
-    api->log(g_mod, "FnFNitro initialized successfully.");
+    api->log(g_mod, "Fast & Furious NOS initialized successfully.");
     return 0;
 }
