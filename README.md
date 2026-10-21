@@ -2,7 +2,7 @@
 
 Fast & Furious style **nitro** for **Forza Horizon 2** (Xbox One build on PC via the Azimuth launcher), built on the **FH2 Mod Platform**.
 
-Hold **LB** to burn nitro: your car gets a strong push, blue flames shoot from your tailpipes, the speedometer gets a draining NOS gauge with a glowing tip, and the controller rumbles.
+Hold **LB** (or any button you pick) to burn nitro: your car gets a strong push, blue flames shoot from your tailpipes, the speedometer gets a draining NOS gauge with a glowing tip, and the controller rumbles.
 
 [<img width="1536" height="864" alt="image" src="https://github.com/user-attachments/assets/ce6448ca-6403-46ca-b6ec-baeee1115d85" />](https://www.youtube.com/watch?v=T0PnPXlaUCg)
 
@@ -11,8 +11,8 @@ Hold **LB** to burn nitro: your car gets a strong push, blue flames shoot from y
 
 ## Features
 
-- **Nitro on LB.** Hold the left shoulder button on any connected controller. (There is no keyboard key.)
-- **A real tank.** Nitro drains while you hold LB and recharges when you let go. Run it dry and it locks out until you release LB and have recharged about 2 seconds.
+- **Nitro on LB, or any button you choose.** Hold the left shoulder button on any connected controller, or remap it to another button, d-pad direction or trigger (see **Nitro Button** below). There is no keyboard key.
+- **A real tank.** Nitro drains while you hold the nitro button and recharges when you let go. Run it dry and it locks out until you release the button and have recharged about 2 seconds.
 - **Buildup curve.** The push ramps up over a short time instead of snapping on.
 - **Only your car.** AI racers and traffic are never boosted.
 - **Stays on the road.** The push follows the horizontal direction of the car's nose, so a pitched-up nose doesn't launch you into the sky, and nothing is applied while the car is airborne (or for a moment after landing).
@@ -26,7 +26,8 @@ Hold **LB** to burn nitro: your car gets a strong push, blue flames shoot from y
 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
-| Nitro System (LB) | On / Off | On | Turns nitro on or off. |
+| Nitro System | On / Off | On | Turns nitro on or off. |
+| Nitro Button | 1 - 16 | 1 (LB) | Which button burns nitro. The numbers are listed under the ini notes below. Applies right away. |
 | Nitro Debug Overlay | On / Off | Off | Draws debug info over the game (see below). |
 | Nitro Boost Multiplier | 1.0x - 2.0x | 1.6x | Strength of the push. |
 | Nitro Tank Capacity (sec) | 5 - 60 | 20 | Seconds of nitro in a full tank. |
@@ -39,6 +40,7 @@ Settings are saved to `fh2-mods\FnFNitro.ini`:
 ```ini
 [Settings]
 NitroEnabled=1
+NitroButton=LB
 TorqueScale=1.60
 Duration=20.0
 BuildupTime=0.50
@@ -49,6 +51,20 @@ BackfireOnAllCars=1
 
 A few notes on the file:
 
+- `NitroButton` picks which controller button burns nitro (default `LB`). An unknown value falls back to `LB`. The Mods page can only show numbers, so there the **Nitro Button** row is a slider from 1 to 16; in the ini you write the name:
+
+  | # | Name | Button | # | Name | Button |
+  |---|---|---|---|---|---|
+  | 1 | `LB` | Left bumper | 9 | `DPadUp` | D-pad up |
+  | 2 | `RB` | Right bumper | 10 | `DPadDown` | D-pad down |
+  | 3 | `A` | A | 11 | `DPadLeft` | D-pad left |
+  | 4 | `B` | B | 12 | `DPadRight` | D-pad right |
+  | 5 | `X` | X | 13 | `Back` | Back / View |
+  | 6 | `Y` | Y | 14 | `Start` | Start / Menu |
+  | 7 | `LS` | Left stick click | 15 | `LT` | Left trigger |
+  | 8 | `RS` | Right stick click | 16 | `RT` | Right trigger |
+
+  Pick one the game doesn't already use while driving, or it will do both at once. Changes on the Mods page apply immediately; edits to the file apply the next time the game starts.
 - `BackfireOnAllCars` is the **Backfire on All Cars** row on the Mods page. When it is on, the mod makes every car able to backfire by changing the game database at startup, which the flames depend on. Turn it off to leave the game's own backfire settings alone: flames then only work on cars the game already lets backfire. A change only takes effect the next time the game starts.
 
 ### Debug overlay

@@ -45,9 +45,43 @@ static void init_paths() {
     }
 }
 
+// Nitro button binding (NitroButton in the ini). Triggers are analog, so they get their own flags.
+struct ButtonName { const wchar_t* name; WORD mask; };
+static constexpr WORD BTN_LT = 0x8001;
+static constexpr WORD BTN_RT = 0x8002;
+static const ButtonName k_buttons[] = {
+    {L"LB", XINPUT_GAMEPAD_LEFT_SHOULDER}, {L"RB", XINPUT_GAMEPAD_RIGHT_SHOULDER},
+    {L"A", XINPUT_GAMEPAD_A}, {L"B", XINPUT_GAMEPAD_B}, {L"X", XINPUT_GAMEPAD_X}, {L"Y", XINPUT_GAMEPAD_Y},
+    {L"LS", XINPUT_GAMEPAD_LEFT_THUMB}, {L"RS", XINPUT_GAMEPAD_RIGHT_THUMB},
+    {L"DPadUp", XINPUT_GAMEPAD_DPAD_UP}, {L"DPadDown", XINPUT_GAMEPAD_DPAD_DOWN},
+    {L"DPadLeft", XINPUT_GAMEPAD_DPAD_LEFT}, {L"DPadRight", XINPUT_GAMEPAD_DPAD_RIGHT},
+    {L"Back", XINPUT_GAMEPAD_BACK}, {L"Start", XINPUT_GAMEPAD_START},
+    {L"LT", BTN_LT}, {L"RT", BTN_RT},
+};
+static std::atomic<WORD> g_nitro_button{XINPUT_GAMEPAD_LEFT_SHOULDER};
+
+static int button_index() {
+    for (int i = 0; i < (int)(sizeof(k_buttons) / sizeof(k_buttons[0])); ++i)
+        if (k_buttons[i].mask == g_nitro_button.load()) return i;
+    return 0;
+}
+
+static bool nitro_button_down(const XINPUT_GAMEPAD& pad) {
+    WORD b = g_nitro_button.load();
+    if (b == BTN_LT) return pad.bLeftTrigger > XINPUT_GAMEPAD_TRIGGER_THRESHOLD;
+    if (b == BTN_RT) return pad.bRightTrigger > XINPUT_GAMEPAD_TRIGGER_THRESHOLD;
+    return (pad.wButtons & b) != 0;
+}
+
 // INI Persistence
 static void load_config() {
     if (g_ini_path[0] == L'\0') return;
+
+    wchar_t btn[32];
+    GetPrivateProfileStringW(L"Settings", L"NitroButton", L"LB", btn, 32, g_ini_path);
+    g_nitro_button.store(XINPUT_GAMEPAD_LEFT_SHOULDER);   // unknown names fall back to LB
+    for (const auto& b : k_buttons)
+        if (_wcsicmp(btn, b.name) == 0) g_nitro_button.store(b.mask);
 
     int en = GetPrivateProfileIntW(L"Settings", L"NitroEnabled", 1, g_ini_path);
     g_enabled.store(en != 0);
@@ -81,6 +115,8 @@ static void save_config() {
     if (g_ini_path[0] == L'\0') return;
 
     wchar_t buf[64];
+    for (const auto& b : k_buttons)
+        if (b.mask == g_nitro_button.load()) WritePrivateProfileStringW(L"Settings", L"NitroButton", b.name, g_ini_path);
     WritePrivateProfileStringW(L"Settings", L"NitroEnabled", g_enabled.load() ? L"1" : L"0", g_ini_path);
     WritePrivateProfileStringW(L"Settings", L"DebugOverlay", g_debug.load() ? L"1" : L"0", g_ini_path);
     WritePrivateProfileStringW(L"Settings", L"BackfireOnAllCars", g_backfire_all_cars.load() ? L"1" : L"0", g_ini_path);
@@ -728,7 +764,16 @@ static void on_setting_changed(void* user, const char* key, int value) {
 static void on_slider_changed(void* user, const char* key, float value) {
     (void)user;
     char buf[128];
-    if (strcmp(key, "TorqueScale") == 0) {
+    if (strcmp(key, "NitroButton") == 0) {
+        constexpr int n = (int)(sizeof(k_buttons) / sizeof(k_buttons[0]));
+        int idx = (int)(value + 0.5f) - 1;
+        if (idx < 0) idx = 0;
+        if (idx >= n) idx = n - 1;
+        g_nitro_button.store(k_buttons[idx].mask);
+        save_config();
+        snprintf(buf, sizeof(buf), "NitroButton set to %ls (saved)", k_buttons[idx].name);
+        if (g_api && g_mod) g_api->log(g_mod, buf);
+    } else if (strcmp(key, "TorqueScale") == 0) {
         g_torque_scale.store(value);
         save_config();
         snprintf(buf, sizeof(buf), "TorqueScale set to %.2fx (saved)", value);
@@ -877,12 +922,12 @@ static void nitro_worker_thread() {
             continue;
         }
 
-        // Poll all 4 controller ports for LB (Left Shoulder)
+        // Poll all 4 controller ports for the nitro button (LB by default)
         bool button_pressed = false;
         for (DWORD user_idx = 0; user_idx < 4; ++user_idx) {
             XINPUT_STATE state{};
             if (XInputGetState(user_idx, &state) == ERROR_SUCCESS) {
-                if ((state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) != 0) {
+                if (nitro_button_down(state.Gamepad)) {
                     button_pressed = true;
                     break;
                 }
@@ -1163,9 +1208,9 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
     FH2ModInfo info{};
     info.size             = sizeof(info);
     info.name             = "NitroSystem";
-    info.version          = "1.0.0";
+    info.version          = "1.1.0";
     info.github_repo      = "qiangqiang101/NitroSystem";
-    info.platform_version = "1.0.0";
+    info.platform_version = "1.1.0";
     info.check_updates    = 0;
     info.description      = "Fast & Furious Nitro system ported to Forza Horizon 2 (All Cars - LB to activate)";
 
@@ -1209,6 +1254,24 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
         api->add_setting(g_mod, &s_backfire);
 
         if (api->api_version >= 5) {
+            // Sliders can only show numbers, so the button is picked by number (listed in the description).
+            FH2Setting s_button{};
+            s_button.size          = sizeof(s_button);
+            s_button.key           = "NitroButton";
+            s_button.label         = "Nitro Button";
+            s_button.description   = "1 LB, 2 RB, 3 A, 4 B, 5 X, 6 Y, 7 LS click, 8 RS click, 9 D-Pad Up, 10 D-Pad Down, "
+                                     "11 D-Pad Left, 12 D-Pad Right, 13 Back, 14 Start, 15 LT, 16 RT. Pick one the game "
+                                     "doesn't use while driving. Applies right away.";
+            s_button.kind          = FH2_SETTING_SLIDER;
+            s_button.min           = 1.0f;
+            s_button.max           = (float)(sizeof(k_buttons) / sizeof(k_buttons[0]));
+            s_button.step          = 1.0f;
+            s_button.slider_value  = (float)(button_index() + 1);
+            s_button.display_scale = 1.0f;
+            s_button.decimals      = 0;
+            s_button.on_slide      = on_slider_changed;
+            api->add_setting(g_mod, &s_button);
+
             FH2Setting s_torque{};
             s_torque.size          = sizeof(s_torque);
             s_torque.key           = "TorqueScale";
