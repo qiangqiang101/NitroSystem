@@ -181,126 +181,7 @@ static void detour_backfire_prep(void* r15) {
     }
 }
 
-// Dynamic Nitrous HUD Properties injected into HUDStatusSpeedometer
-struct CustomProperty {
-    uint8_t data[0x80];
-};
-
-static CustomProperty g_prop_seg1{};
-static CustomProperty g_prop_seg2{};
-static CustomProperty g_prop_seg3{};
-static CustomProperty g_prop_seg4{};
-static CustomProperty g_prop_glow1{};
-static CustomProperty g_prop_glow2{};
-static CustomProperty g_prop_glow3{};
-static CustomProperty g_prop_glow4{};
-
-static float g_seg1_ratio = 1.0f;
-static float g_seg2_ratio = 1.0f;
-static float g_seg3_ratio = 1.0f;
-static float g_seg4_ratio = 1.0f;
-static float g_glow1_opacity = 0.0f;
-static float g_glow2_opacity = 0.0f;
-static float g_glow3_opacity = 0.0f;
-static float g_glow4_opacity = 0.0f;
-
 static void* g_game_base = nullptr;
-
-static void custom_getter_seg1(void* out_val, void* prop, void* instance) {
-    (void)instance;
-    uint8_t dummy[0x160] = {0};
-    *(float*)(dummy + 0x14c) = g_seg1_ratio;
-    typedef void (*AnthemGetterFn)(void*, void*, void*);
-    if (g_game_base) ((AnthemGetterFn)((uintptr_t)g_game_base + 0xACDD40))(out_val, prop, dummy);
-}
-static void custom_getter_seg2(void* out_val, void* prop, void* instance) {
-    (void)instance;
-    uint8_t dummy[0x160] = {0};
-    *(float*)(dummy + 0x14c) = g_seg2_ratio;
-    typedef void (*AnthemGetterFn)(void*, void*, void*);
-    if (g_game_base) ((AnthemGetterFn)((uintptr_t)g_game_base + 0xACDD40))(out_val, prop, dummy);
-}
-static void custom_getter_seg3(void* out_val, void* prop, void* instance) {
-    (void)instance;
-    uint8_t dummy[0x160] = {0};
-    *(float*)(dummy + 0x14c) = g_seg3_ratio;
-    typedef void (*AnthemGetterFn)(void*, void*, void*);
-    if (g_game_base) ((AnthemGetterFn)((uintptr_t)g_game_base + 0xACDD40))(out_val, prop, dummy);
-}
-static void custom_getter_seg4(void* out_val, void* prop, void* instance) {
-    (void)instance;
-    uint8_t dummy[0x160] = {0};
-    *(float*)(dummy + 0x14c) = g_seg4_ratio;
-    typedef void (*AnthemGetterFn)(void*, void*, void*);
-    if (g_game_base) ((AnthemGetterFn)((uintptr_t)g_game_base + 0xACDD40))(out_val, prop, dummy);
-}
-static void custom_getter_glow1(void* out_val, void* prop, void* instance) {
-    (void)instance;
-    uint8_t dummy[0x160] = {0};
-    *(float*)(dummy + 0x14c) = g_glow1_opacity;
-    typedef void (*AnthemGetterFn)(void*, void*, void*);
-    if (g_game_base) ((AnthemGetterFn)((uintptr_t)g_game_base + 0xACDD40))(out_val, prop, dummy);
-}
-static void custom_getter_glow2(void* out_val, void* prop, void* instance) {
-    (void)instance;
-    uint8_t dummy[0x160] = {0};
-    *(float*)(dummy + 0x14c) = g_glow2_opacity;
-    typedef void (*AnthemGetterFn)(void*, void*, void*);
-    if (g_game_base) ((AnthemGetterFn)((uintptr_t)g_game_base + 0xACDD40))(out_val, prop, dummy);
-}
-static void custom_getter_glow3(void* out_val, void* prop, void* instance) {
-    (void)instance;
-    uint8_t dummy[0x160] = {0};
-    *(float*)(dummy + 0x14c) = g_glow3_opacity;
-    typedef void (*AnthemGetterFn)(void*, void*, void*);
-    if (g_game_base) ((AnthemGetterFn)((uintptr_t)g_game_base + 0xACDD40))(out_val, prop, dummy);
-}
-static void custom_getter_glow4(void* out_val, void* prop, void* instance) {
-    (void)instance;
-    uint8_t dummy[0x160] = {0};
-    *(float*)(dummy + 0x14c) = g_glow4_opacity;
-    typedef void (*AnthemGetterFn)(void*, void*, void*);
-    if (g_game_base) ((AnthemGetterFn)((uintptr_t)g_game_base + 0xACDD40))(out_val, prop, dummy);
-}
-
-typedef void (*RegPropFn)(void* class_desc, void* prop);
-
-static void setup_property(CustomProperty& p, void* base_prop, void* getter_fn, const char* name, void* class_desc, RegPropFn reg_prop) {
-    memcpy(p.data, base_prop, 0x58);
-    *(void**)(p.data + 0x08) = nullptr;
-    *(uint32_t*)(p.data + 0x10) = 1000; // High refcount
-    *(void**)(p.data + 0x28) = getter_fn;
-    *(void**)(p.data + 0x30) = nullptr;
-    *(const char**)(p.data + 0x40) = name;
-    reg_prop(class_desc, p.data);
-}
-
-static bool g_props_registered = false;
-static void register_all_properties(void* class_desc) {
-    if (g_props_registered || !class_desc || !g_game_base) return;
-
-    typedef void* (*GetPropFn)();
-    GetPropFn get_base_prop = (GetPropFn)((uintptr_t)g_game_base + 0xADB0E0);
-    void* base_prop = get_base_prop();
-    if (!base_prop) return;
-
-    RegPropFn reg_prop = (RegPropFn)((uintptr_t)g_game_base + 0x155EE30);
-
-    setup_property(g_prop_seg1, base_prop, (void*)custom_getter_seg1, "NitrousSegment1", class_desc, reg_prop);
-    setup_property(g_prop_seg2, base_prop, (void*)custom_getter_seg2, "NitrousSegment2", class_desc, reg_prop);
-    setup_property(g_prop_seg3, base_prop, (void*)custom_getter_seg3, "NitrousSegment3", class_desc, reg_prop);
-    setup_property(g_prop_seg4, base_prop, (void*)custom_getter_seg4, "NitrousSegment4", class_desc, reg_prop);
-
-    setup_property(g_prop_glow1, base_prop, (void*)custom_getter_glow1, "NitrousGlow1", class_desc, reg_prop);
-    setup_property(g_prop_glow2, base_prop, (void*)custom_getter_glow2, "NitrousGlow2", class_desc, reg_prop);
-    setup_property(g_prop_glow3, base_prop, (void*)custom_getter_glow3, "NitrousGlow3", class_desc, reg_prop);
-    setup_property(g_prop_glow4, base_prop, (void*)custom_getter_glow4, "NitrousGlow4", class_desc, reg_prop);
-
-    g_props_registered = true;
-    if (g_api && g_mod) {
-        g_api->log(g_mod, "Registered 8 dynamic Nitrous properties (NitrousSegment1..4, NitrousGlow1..4) into HUDStatusSpeedometer!");
-    }
-}
 
 // Speedometer Gauge Hook: HUDStatusSpeedometer tick (RVA 0xAD6070 in Anthem)
 // rcx = HUDStatusSpeedometer* speedo, xmm1 = float current_rpm
@@ -315,96 +196,87 @@ static void detour_speedo_tick(void* speedo, float rpm) {
     if (!speedo || !g_game_base) return;
 
     __try {
-        if (!g_props_registered) {
-            typedef void* (*GetTypeFn)(void*);
-            void* class_desc = ((GetTypeFn)(*(void***)speedo)[3])(speedo);
-            register_all_properties(class_desc);
-        }
-
         float fuel = g_current_fuel.load();
         float duration = g_duration.load();
         float total_ratio = (duration > 0.001f) ? (fuel / duration) : 0.0f;
         if (total_ratio < 0.0f) total_ratio = 0.0f;
         if (total_ratio > 1.0f) total_ratio = 1.0f;
 
-        // Sequential segments:
-        // Segment 1 (bottom/left): 0.00 to 0.25
-        // Segment 2:               0.25 to 0.50
-        // Segment 3:               0.50 to 0.75
-        // Segment 4 (top/right):   0.75 to 1.00
+        // Sequential segments (Top segment drains first, down to bottom segment):
+        // Segment 1 (bottom: 0.00 to 0.25)
+        // Segment 2:         0.25 to 0.50
+        // Segment 3:         0.50 to 0.75
+        // Segment 4 (top:    0.75 to 1.00)
         auto clamp01 = [](float v) { return v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v); };
         float s1 = clamp01((total_ratio - 0.00f) / 0.25f);
         float s2 = clamp01((total_ratio - 0.25f) / 0.25f);
         float s3 = clamp01((total_ratio - 0.50f) / 0.25f);
         float s4 = clamp01((total_ratio - 0.75f) / 0.25f);
 
-        // Active segment white glow:
-        // White tip surge only appears on the actively draining segment while nitro is firing
-        bool active = g_nitro_active.load();
+        // Tip glow must remain 0.0f because TipGlowFade > 0 triggers a Durango radial shader
+        // defect where the entire 300x300 rotated bounding quad renders as solid white.
         float g1 = 0.0f, g2 = 0.0f, g3 = 0.0f, g4 = 0.0f;
-        if (active && total_ratio > 0.001f) {
-            if (total_ratio > 0.75f) {
-                g4 = 1.0f;
-            } else if (total_ratio > 0.50f) {
-                g3 = 1.0f;
-            } else if (total_ratio > 0.25f) {
-                g2 = 1.0f;
-            } else {
-                g1 = 1.0f;
-            }
-        }
 
-        typedef void (*RaisePropFn)(void* instance, void* prop_desc);
-        RaisePropFn raise_prop = (RaisePropFn)((uintptr_t)g_game_base + 0x40A730);
+        // NOTE: We deliberately do NOT touch [speedo + 0x14c] (GaugeSmallDashAmount).
+        // GaugeSmallDashAmount and GaugeLargeDashAmount are authentic RPM tick mark intervals
+        // calculated by the game engine for the gauge mesh dividers.
 
-        // Update legacy GaugeSmallDashAmount at [speedo + 0x14c]
-        float* p_dash = (float*)((uintptr_t)speedo + 0x14c);
-        if (fabsf(*p_dash - total_ratio) > 0.0005f) {
-            *p_dash = total_ratio;
-            typedef void* (*GetPropFn)();
-            GetPropFn get_base_prop = (GetPropFn)((uintptr_t)g_game_base + 0xADB0E0);
-            void* prop = get_base_prop();
-            if (prop) raise_prop(speedo, prop);
-        }
+        // Drive the 4 NOS segments (and active tip glow) via RPMGaugeNumbers[17..20] XPos/YPos.
+        // Elements 17..20 are unused by the RPM dial (cars don't rev to 17k+ RPM) and their
+        // XPos and YPos properties are native AVUI floats that bind flawlessly in XAML.
+        void* arr_wrapper = *(void**)((uintptr_t)speedo + 0x150);
+        if (arr_wrapper) {
+            void* p50 = *(void**)((uintptr_t)arr_wrapper + 0x50);
+            if (p50) {
+                void* p28 = *(void**)((uintptr_t)p50 + 0x28);
+                if (p28) {
+                    void** items = *(void***)((uintptr_t)p28 + 0x28);
+                    if (items) {
+                        typedef void* (*GetPropFn)();
+                        typedef void (*RaiseItemPropFn)(void* item, void* prop);
 
-        if (g_props_registered) {
-            if (fabsf(g_seg1_ratio - s1) > 0.0005f) {
-                g_seg1_ratio = s1;
-                raise_prop(speedo, g_prop_seg1.data);
-            }
-            if (fabsf(g_seg2_ratio - s2) > 0.0005f) {
-                g_seg2_ratio = s2;
-                raise_prop(speedo, g_prop_seg2.data);
-            }
-            if (fabsf(g_seg3_ratio - s3) > 0.0005f) {
-                g_seg3_ratio = s3;
-                raise_prop(speedo, g_prop_seg3.data);
-            }
-            if (fabsf(g_seg4_ratio - s4) > 0.0005f) {
-                g_seg4_ratio = s4;
-                raise_prop(speedo, g_prop_seg4.data);
-            }
+                        GetPropFn get_xpos_prop = (GetPropFn)((uintptr_t)g_game_base + 0xADD560);
+                        GetPropFn get_ypos_prop = (GetPropFn)((uintptr_t)g_game_base + 0xADD620);
+                        RaiseItemPropFn raise_item_prop = (RaiseItemPropFn)((uintptr_t)g_game_base + 0xAD1A80);
 
-            if (fabsf(g_glow1_opacity - g1) > 0.01f) {
-                g_glow1_opacity = g1;
-                raise_prop(speedo, g_prop_glow1.data);
-            }
-            if (fabsf(g_glow2_opacity - g2) > 0.01f) {
-                g_glow2_opacity = g2;
-                raise_prop(speedo, g_prop_glow2.data);
-            }
-            if (fabsf(g_glow3_opacity - g3) > 0.01f) {
-                g_glow3_opacity = g3;
-                raise_prop(speedo, g_prop_glow3.data);
-            }
-            if (fabsf(g_glow4_opacity - g4) > 0.01f) {
-                g_glow4_opacity = g4;
-                raise_prop(speedo, g_prop_glow4.data);
+                        void* prop_xpos = get_xpos_prop();
+                        void* prop_ypos = get_ypos_prop();
+
+                        struct SegTarget {
+                            int idx;
+                            float ratio;
+                            float glow;
+                        } targets[4] = {
+                            {17, s1, g1}, // Segment 1 (Bottom)
+                            {18, s2, g2}, // Segment 2
+                            {19, s3, g3}, // Segment 3
+                            {20, s4, g4}  // Segment 4 (Top)
+                        };
+
+                        for (const auto& t : targets) {
+                            void* item = items[t.idx];
+                            if (!item) continue;
+
+                            float* p_x = (float*)((uintptr_t)item + 0x38);
+                            if (fabsf(*p_x - t.ratio) > 0.0005f) {
+                                *p_x = t.ratio;
+                                if (prop_xpos) raise_item_prop(item, prop_xpos);
+                            }
+
+                            float* p_y = (float*)((uintptr_t)item + 0x3c);
+                            if (fabsf(*p_y - t.glow) > 0.005f) {
+                                *p_y = t.glow;
+                                if (prop_ypos) raise_item_prop(item, prop_ypos);
+                            }
+                        }
+                    }
+                }
             }
         }
     } __except (EXCEPTION_EXECUTE_HANDLER) {
     }
 }
+
 
 // Settings callbacks
 static void on_setting_changed(void* user, const char* key, int value) {

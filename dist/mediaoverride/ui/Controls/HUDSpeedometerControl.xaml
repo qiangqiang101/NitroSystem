@@ -48,6 +48,8 @@
 
             <Color x:Key="A_Color_Nitrous_Fill">#FF2DB2FF</Color>
 
+            <Color x:Key="A_Color_Nitrous_Background">#35FFFFFF</Color>
+
             <local:FZGeometry x:Key="A_FZGeometry_AnalogGaugeMesh" Data="M0,150L28.64745084,61.83221216 103.6474508,7.341522556 196.3525492,7.341522556 271.3525492,61.83221216 300,150 271.3525492,238.1677878 190,300 226.8566145,205.839599 245,150 226.8566145,94.16040103 179.3566145,59.64963095 120.6433855,59.64963095 73.14338553,94.16040103 55,150 73.14338553,205.839599 120,300 28.64745084,238.1677878z"/>
 
 
@@ -574,7 +576,7 @@
 
                         <local:FZMaterial Height="{StaticResource A_Double_Speedo_Digital_Height}" Width="{StaticResource A_Double_Speedo_Width}" RenderTransformOrigin="0.5,0.5" Margin="1,-35,0,0"> <!-- Gauge -->
                         <local:FZMaterial.Preset>
-                            <local:FZMaterialPresetDigitalGauge FillAmount="{Binding GaugeFillAmount}" RedLineAmount="{Binding GaugeRedlineAmount}" SmallDash="0" LargeDash="0" />
+                            <local:FZMaterialPresetDigitalGauge FillAmount="{Binding GaugeFillAmount}" RedLineAmount="{Binding GaugeRedlineAmount}" SmallDash="{Binding GaugeSmallDashAmount}" LargeDash="{Binding GaugeLargeDashAmount}" />
                         </local:FZMaterial.Preset>
                     </local:FZMaterial>
                     <!-- Authentic Fast & Furious NOS Digital Bar (4 Segments with Transparent Gaps) -->
@@ -583,14 +585,14 @@
                             <!-- 4 Sequential NOS Segments with Translucent Empty Background & Active White Tip Glow -->
                             <StackPanel Orientation="Horizontal" Width="245" Height="8" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="1,0,0,0">
                                 <!-- Segment 1 (Leftmost) -->
-                                <Grid Width="59" Height="8" Margin="0,0,3,0">
+                                <Grid DataContext="{Binding RPMGaugeNumbers[17]}" Width="59" Height="8" Margin="0,0,3,0">
                                     <Rectangle Width="59" Height="8" Fill="#35FFFFFF"/>
                                     <Grid Width="59" Height="8" HorizontalAlignment="Left" ClipToBounds="True" RenderTransformOrigin="0.0,0.5">
                                         <Grid.RenderTransform>
-                                            <ScaleTransform ScaleX="{Binding NitrousSegment1}"/>
+                                            <ScaleTransform ScaleX="{Binding XPos}"/>
                                         </Grid.RenderTransform>
                                         <Rectangle Width="59" Height="8" Fill="#FF2DB2FF"/>
-                                        <Rectangle Width="59" Height="8" Opacity="{Binding NitrousGlow1}">
+                                        <Rectangle Width="59" Height="8" Opacity="{Binding YPos}">
                                             <Rectangle.Fill>
                                                 <LinearGradientBrush StartPoint="0.0,0.5" EndPoint="1.0,0.5">
                                                     <GradientStop Color="#00FFFFFF" Offset="0.0"/>
@@ -603,14 +605,14 @@
                                 </Grid>
 
                                 <!-- Segment 2 -->
-                                <Grid Width="59" Height="8" Margin="0,0,3,0">
+                                <Grid DataContext="{Binding RPMGaugeNumbers[18]}" Width="59" Height="8" Margin="0,0,3,0">
                                     <Rectangle Width="59" Height="8" Fill="#35FFFFFF"/>
                                     <Grid Width="59" Height="8" HorizontalAlignment="Left" ClipToBounds="True" RenderTransformOrigin="0.0,0.5">
                                         <Grid.RenderTransform>
-                                            <ScaleTransform ScaleX="{Binding NitrousSegment2}"/>
+                                            <ScaleTransform ScaleX="{Binding XPos}"/>
                                         </Grid.RenderTransform>
                                         <Rectangle Width="59" Height="8" Fill="#FF2DB2FF"/>
-                                        <Rectangle Width="59" Height="8" Opacity="{Binding NitrousGlow2}">
+                                        <Rectangle Width="59" Height="8" Opacity="{Binding YPos}">
                                             <Rectangle.Fill>
                                                 <LinearGradientBrush StartPoint="0.0,0.5" EndPoint="1.0,0.5">
                                                     <GradientStop Color="#00FFFFFF" Offset="0.0"/>
@@ -623,14 +625,14 @@
                                 </Grid>
 
                                 <!-- Segment 3 -->
-                                <Grid Width="59" Height="8" Margin="0,0,3,0">
+                                <Grid DataContext="{Binding RPMGaugeNumbers[19]}" Width="59" Height="8" Margin="0,0,3,0">
                                     <Rectangle Width="59" Height="8" Fill="#35FFFFFF"/>
                                     <Grid Width="59" Height="8" HorizontalAlignment="Left" ClipToBounds="True" RenderTransformOrigin="0.0,0.5">
                                         <Grid.RenderTransform>
-                                            <ScaleTransform ScaleX="{Binding NitrousSegment3}"/>
+                                            <ScaleTransform ScaleX="{Binding XPos}"/>
                                         </Grid.RenderTransform>
                                         <Rectangle Width="59" Height="8" Fill="#FF2DB2FF"/>
-                                        <Rectangle Width="59" Height="8" Opacity="{Binding NitrousGlow3}">
+                                        <Rectangle Width="59" Height="8" Opacity="{Binding YPos}">
                                             <Rectangle.Fill>
                                                 <LinearGradientBrush StartPoint="0.0,0.5" EndPoint="1.0,0.5">
                                                     <GradientStop Color="#00FFFFFF" Offset="0.0"/>
@@ -643,14 +645,14 @@
                                 </Grid>
 
                                 <!-- Segment 4 (Rightmost) -->
-                                <Grid Width="59" Height="8">
+                                <Grid DataContext="{Binding RPMGaugeNumbers[20]}" Width="59" Height="8">
                                     <Rectangle Width="59" Height="8" Fill="#35FFFFFF"/>
                                     <Grid Width="59" Height="8" HorizontalAlignment="Left" ClipToBounds="True" RenderTransformOrigin="0.0,0.5">
                                         <Grid.RenderTransform>
-                                            <ScaleTransform ScaleX="{Binding NitrousSegment4}"/>
+                                            <ScaleTransform ScaleX="{Binding XPos}"/>
                                         </Grid.RenderTransform>
                                         <Rectangle Width="59" Height="8" Fill="#FF2DB2FF"/>
-                                        <Rectangle Width="59" Height="8" Opacity="{Binding NitrousGlow4}">
+                                        <Rectangle Width="59" Height="8" Opacity="{Binding YPos}">
                                             <Rectangle.Fill>
                                                 <LinearGradientBrush StartPoint="0.0,0.5" EndPoint="1.0,0.5">
                                                     <GradientStop Color="#00FFFFFF" Offset="0.0"/>
@@ -743,36 +745,21 @@
 
                     <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[16]}" Style="{StaticResource A_Style_FZMaterial_GaugeNumbers}" ImageSource="/ForzaUI;component/Textures/Anthem/HUD/Speedometer/HUD_Dial_RevNumbers_16.png"/>
 
-                    <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[17]}" Style="{StaticResource A_Style_FZMaterial_GaugeNumbers}" ImageSource="/ForzaUI;component/Textures/Anthem/HUD/Speedometer/HUD_Dial_RevNumbers_17.png"/>
-
-                    <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[18]}" Style="{StaticResource A_Style_FZMaterial_GaugeNumbers}" ImageSource="/ForzaUI;component/Textures/Anthem/HUD/Speedometer/HUD_Dial_RevNumbers_18.png"/>
-
-                    <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[19]}" Style="{StaticResource A_Style_FZMaterial_GaugeNumbers}" ImageSource="/ForzaUI;component/Textures/Anthem/HUD/Speedometer/HUD_Dial_RevNumbers_19.png"/>
-
-                    <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[20]}" Style="{StaticResource A_Style_FZMaterial_GaugeNumbers}" ImageSource="/ForzaUI;component/Textures/Anthem/HUD/Speedometer/HUD_Dial_RevNumbers_20.png"/>
-
-                    
-
-
                     <local:FZMaterial Height="{StaticResource A_Double_Speedo_Analog_Height}" Width="{StaticResource A_Double_Speedo_Width}" RenderTransformOrigin="0.5,0.5" Data="{StaticResource A_FZGeometry_AnalogGaugeMesh}"> <!-- Gauge -->
-
                          <local:FZMaterial.Preset>
-
-                             <local:FZMaterialPresetAnalogGauge FillAmount="{Binding GaugeFillAmount}" RedLineAmount="{Binding GaugeRedlineAmount}" SmallDash="0" LargeDash="0" />
-
+                             <local:FZMaterialPresetAnalogGauge FillAmount="{Binding GaugeFillAmount}" RedLineAmount="{Binding GaugeRedlineAmount}" SmallDash="{Binding GaugeSmallDashAmount}" LargeDash="{Binding GaugeLargeDashAmount}" />
                           </local:FZMaterial.Preset>
-
                      </local:FZMaterial>
 
-<!-- Authentic Fast & Furious NOS Radial Bar Fill (4 Sequential Segments) -->
-                    <!-- Segment 4 (Top: Angle 66.0) -->
+<!-- Authentic Fast & Furious NOS Radial Bar Translucent Background Track (4 Segments) -->
+                    <!-- Background Segment 4 (Top: Angle 128.7) -->
                     <local:FZMaterial Height="300"
                                       Width="300"
                                       RenderTransformOrigin="0.5,0.5"
-                                      Color="{StaticResource A_Color_Nitrous_Fill}">
+                                      Color="{StaticResource A_Color_Nitrous_Background}">
                         <local:FZMaterial.RenderTransform>
                             <TransformGroup>
-                                <RotateTransform Angle="66.0"/>
+                                <RotateTransform Angle="128.7"/>
                                 <ScaleTransform ScaleX="1.665"
                                                 ScaleY="1.665"/>
                             </TransformGroup>
@@ -784,38 +771,15 @@
                                                              AngleAmount="0.936"
                                                              BarWidth="0.051"
                                                              BackgroundColor="#00000000"
-                                                             Ratio="{Binding GaugeSmallDashAmount}"/>
+                                                             Ratio="1.0"/>
                         </local:FZMaterial.Preset>
                     </local:FZMaterial>
 
-                    <!-- Segment 3 (Angle 86.9) -->
+                    <!-- Background Segment 3 (Angle 107.8) -->
                     <local:FZMaterial Height="300"
                                       Width="300"
                                       RenderTransformOrigin="0.5,0.5"
-                                      Color="{StaticResource A_Color_Nitrous_Fill}">
-                        <local:FZMaterial.RenderTransform>
-                            <TransformGroup>
-                                <RotateTransform Angle="86.9"/>
-                                <ScaleTransform ScaleX="1.665"
-                                                ScaleY="1.665"/>
-                            </TransformGroup>
-                        </local:FZMaterial.RenderTransform>
-                        <local:FZMaterial.Preset>
-                            <local:FZMaterialPresetRadialBar TargetRatio="1.0"
-                                                             ShadowIntensity="0"
-                                                             TipGlowFade="0.0"
-                                                             AngleAmount="0.936"
-                                                             BarWidth="0.051"
-                                                             BackgroundColor="#00000000"
-                                                             Ratio="{Binding GaugeSmallDashAmount}"/>
-                        </local:FZMaterial.Preset>
-                    </local:FZMaterial>
-
-                    <!-- Segment 2 (Angle 107.8) -->
-                    <local:FZMaterial Height="300"
-                                      Width="300"
-                                      RenderTransformOrigin="0.5,0.5"
-                                      Color="{StaticResource A_Color_Nitrous_Fill}">
+                                      Color="{StaticResource A_Color_Nitrous_Background}">
                         <local:FZMaterial.RenderTransform>
                             <TransformGroup>
                                 <RotateTransform Angle="107.8"/>
@@ -830,12 +794,60 @@
                                                              AngleAmount="0.936"
                                                              BarWidth="0.051"
                                                              BackgroundColor="#00000000"
-                                                             Ratio="{Binding GaugeSmallDashAmount}"/>
+                                                             Ratio="1.0"/>
                         </local:FZMaterial.Preset>
                     </local:FZMaterial>
 
-                    <!-- Segment 1 (Bottom: Angle 128.7) -->
+                    <!-- Background Segment 2 (Angle 86.9) -->
                     <local:FZMaterial Height="300"
+                                      Width="300"
+                                      RenderTransformOrigin="0.5,0.5"
+                                      Color="{StaticResource A_Color_Nitrous_Background}">
+                        <local:FZMaterial.RenderTransform>
+                            <TransformGroup>
+                                <RotateTransform Angle="86.9"/>
+                                <ScaleTransform ScaleX="1.665"
+                                                ScaleY="1.665"/>
+                            </TransformGroup>
+                        </local:FZMaterial.RenderTransform>
+                        <local:FZMaterial.Preset>
+                            <local:FZMaterialPresetRadialBar TargetRatio="1.0"
+                                                             ShadowIntensity="0"
+                                                             TipGlowFade="0.0"
+                                                             AngleAmount="0.936"
+                                                             BarWidth="0.051"
+                                                             BackgroundColor="#00000000"
+                                                             Ratio="1.0"/>
+                        </local:FZMaterial.Preset>
+                    </local:FZMaterial>
+
+                    <!-- Background Segment 1 (Bottom: Angle 66.0) -->
+                    <local:FZMaterial Height="300"
+                                      Width="300"
+                                      RenderTransformOrigin="0.5,0.5"
+                                      Color="{StaticResource A_Color_Nitrous_Background}">
+                        <local:FZMaterial.RenderTransform>
+                            <TransformGroup>
+                                <RotateTransform Angle="66.0"/>
+                                <ScaleTransform ScaleX="1.665"
+                                                ScaleY="1.665"/>
+                            </TransformGroup>
+                        </local:FZMaterial.RenderTransform>
+                        <local:FZMaterial.Preset>
+                            <local:FZMaterialPresetRadialBar TargetRatio="1.0"
+                                                             ShadowIntensity="0"
+                                                             TipGlowFade="0.0"
+                                                             AngleAmount="0.936"
+                                                             BarWidth="0.051"
+                                                             BackgroundColor="#00000000"
+                                                             Ratio="1.0"/>
+                        </local:FZMaterial.Preset>
+                    </local:FZMaterial>
+
+                    <!-- Authentic Fast & Furious NOS Radial Bar Active Cyan Fill (4 Sequential Segments) -->
+                    <!-- Segment 4 (Top: Angle 128.7, drains first via RPMGaugeNumbers[20]) -->
+                    <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[20]}"
+                                      Height="300"
                                       Width="300"
                                       RenderTransformOrigin="0.5,0.5"
                                       Color="{StaticResource A_Color_Nitrous_Fill}">
@@ -853,7 +865,79 @@
                                                              AngleAmount="0.936"
                                                              BarWidth="0.051"
                                                              BackgroundColor="#00000000"
-                                                             Ratio="{Binding GaugeSmallDashAmount}"/>
+                                                             Ratio="{Binding XPos}"/>
+                        </local:FZMaterial.Preset>
+                    </local:FZMaterial>
+
+                    <!-- Segment 3 (Angle 107.8, drains second via RPMGaugeNumbers[19]) -->
+                    <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[19]}"
+                                      Height="300"
+                                      Width="300"
+                                      RenderTransformOrigin="0.5,0.5"
+                                      Color="{StaticResource A_Color_Nitrous_Fill}">
+                        <local:FZMaterial.RenderTransform>
+                            <TransformGroup>
+                                <RotateTransform Angle="107.8"/>
+                                <ScaleTransform ScaleX="1.665"
+                                                ScaleY="1.665"/>
+                            </TransformGroup>
+                        </local:FZMaterial.RenderTransform>
+                        <local:FZMaterial.Preset>
+                            <local:FZMaterialPresetRadialBar TargetRatio="1.0"
+                                                             ShadowIntensity="0"
+                                                             TipGlowFade="0.0"
+                                                             AngleAmount="0.936"
+                                                             BarWidth="0.051"
+                                                             BackgroundColor="#00000000"
+                                                             Ratio="{Binding XPos}"/>
+                        </local:FZMaterial.Preset>
+                    </local:FZMaterial>
+
+                    <!-- Segment 2 (Angle 86.9, drains third via RPMGaugeNumbers[18]) -->
+                    <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[18]}"
+                                      Height="300"
+                                      Width="300"
+                                      RenderTransformOrigin="0.5,0.5"
+                                      Color="{StaticResource A_Color_Nitrous_Fill}">
+                        <local:FZMaterial.RenderTransform>
+                            <TransformGroup>
+                                <RotateTransform Angle="86.9"/>
+                                <ScaleTransform ScaleX="1.665"
+                                                ScaleY="1.665"/>
+                            </TransformGroup>
+                        </local:FZMaterial.RenderTransform>
+                        <local:FZMaterial.Preset>
+                            <local:FZMaterialPresetRadialBar TargetRatio="1.0"
+                                                             ShadowIntensity="0"
+                                                             TipGlowFade="0.0"
+                                                             AngleAmount="0.936"
+                                                             BarWidth="0.051"
+                                                             BackgroundColor="#00000000"
+                                                             Ratio="{Binding XPos}"/>
+                        </local:FZMaterial.Preset>
+                    </local:FZMaterial>
+
+                    <!-- Segment 1 (Bottom: Angle 66.0, drains last via RPMGaugeNumbers[17]) -->
+                    <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[17]}"
+                                      Height="300"
+                                      Width="300"
+                                      RenderTransformOrigin="0.5,0.5"
+                                      Color="{StaticResource A_Color_Nitrous_Fill}">
+                        <local:FZMaterial.RenderTransform>
+                            <TransformGroup>
+                                <RotateTransform Angle="66.0"/>
+                                <ScaleTransform ScaleX="1.665"
+                                                ScaleY="1.665"/>
+                            </TransformGroup>
+                        </local:FZMaterial.RenderTransform>
+                        <local:FZMaterial.Preset>
+                            <local:FZMaterialPresetRadialBar TargetRatio="1.0"
+                                                             ShadowIntensity="0"
+                                                             TipGlowFade="0.0"
+                                                             AngleAmount="0.936"
+                                                             BarWidth="0.051"
+                                                             BackgroundColor="#00000000"
+                                                             Ratio="{Binding XPos}"/>
                         </local:FZMaterial.Preset>
                     </local:FZMaterial>
 
