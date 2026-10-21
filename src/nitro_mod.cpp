@@ -1,13 +1,16 @@
 #include "fh2mod.h"
 
 #include <windows.h>
+#include <intrin.h>
 #include <mmsystem.h>
 #include <xinput.h>
 
 #include <atomic>
 #include <chrono>
 #include <cmath>
+#include <cstdarg>
 #include <cstdio>
+#include <cstring>
 #include <thread>
 
 #pragma comment(lib, "winmm.lib")
@@ -17,6 +20,8 @@ static const FH2ModApi* g_api = nullptr;
 static FH2Mod* g_mod = nullptr;
 
 static std::atomic<bool> g_enabled{true};
+static std::atomic<bool> g_debug{false};          // on-screen debug overlay (Mods page)
+static std::atomic<bool> g_backfire_all_cars{true};  // "Backfire on All Cars": applied to the database at startup (needs a restart)
 static std::atomic<float> g_torque_scale{1.6f};      // Spire default TorqueScale = 1.6
 static std::atomic<float> g_duration{20.0f};         // Spire default Duration = 20s
 static std::atomic<float> g_buildup_time{0.5f};      // Spire default BuildupTime = 0.5s
@@ -46,11 +51,14 @@ static void load_config() {
 
     int en = GetPrivateProfileIntW(L"Settings", L"NitroEnabled", 1, g_ini_path);
     g_enabled.store(en != 0);
+    g_debug.store(GetPrivateProfileIntW(L"Settings", L"DebugOverlay", 0, g_ini_path) != 0);
+    g_backfire_all_cars.store(GetPrivateProfileIntW(L"Settings", L"BackfireOnAllCars", 1, g_ini_path) != 0);
 
     wchar_t buf[64];
     if (GetPrivateProfileStringW(L"Settings", L"TorqueScale", L"1.6", buf, 64, g_ini_path) > 0) {
         float val = wcstof(buf, nullptr);
-        if (val >= 1.0f && val <= 3.0f) g_torque_scale.store(val);
+        if (val > 2.0f) val = 2.0f;                       // same ceiling as the Mods page slider
+        if (val >= 1.0f) g_torque_scale.store(val);
     }
     if (GetPrivateProfileStringW(L"Settings", L"Duration", L"20.0", buf, 64, g_ini_path) > 0) {
         float val = wcstof(buf, nullptr);
@@ -74,6 +82,8 @@ static void save_config() {
 
     wchar_t buf[64];
     WritePrivateProfileStringW(L"Settings", L"NitroEnabled", g_enabled.load() ? L"1" : L"0", g_ini_path);
+    WritePrivateProfileStringW(L"Settings", L"DebugOverlay", g_debug.load() ? L"1" : L"0", g_ini_path);
+    WritePrivateProfileStringW(L"Settings", L"BackfireOnAllCars", g_backfire_all_cars.load() ? L"1" : L"0", g_ini_path);
     swprintf_s(buf, 64, L"%.2f", g_torque_scale.load());
     WritePrivateProfileStringW(L"Settings", L"TorqueScale", buf, g_ini_path);
     swprintf_s(buf, 64, L"%.1f", g_duration.load());
@@ -90,6 +100,8 @@ typedef bool (*CCarDynamics_UpdateDynamicsFn)(void* this_ptr, void* rdx, void* r
 static CCarDynamics_UpdateDynamicsFn g_orig_cardynamics = nullptr;
 
 static std::atomic<uint64_t> g_physics_frames{0};
+static std::atomic<DWORD> g_phys_tid{0};   // physics hook thread (debug overlay)
+static std::atomic<DWORD> g_frame_tid{0};  // game logic frame-step thread (debug overlay)
 static std::atomic<uint64_t> g_boosted_frames{0};
 static std::atomic<uint64_t> g_last_physics_tick{0};
 static void* g_player_cardynamics = nullptr;
@@ -104,6 +116,8 @@ static std::atomic<uint64_t> g_player_pos_tick{0};
 
 typedef void (*MgrUpdateFn)(uint8_t* mgr, float a, float b);
 static MgrUpdateFn g_orig_mgr_update = nullptr;
+
+static void drive_backfire_from_game_thread();   // defined with the other backfire code below
 
 static void detour_mgr_update(uint8_t* mgr, float a, float b) {
     if (g_orig_mgr_update) {
@@ -121,11 +135,14 @@ static void detour_mgr_update(uint8_t* mgr, float a, float b) {
         }
     } __except (EXCEPTION_EXECUTE_HANDLER) {
     }
+
 }
 
 static const int kScanBytes = 0x400;
 static const float kCalibRadius2 = 8.0f * 8.0f;   // player position can lag the car by a frame
 static const float kPlayerRadius2 = 25.0f * 25.0f;
+static const float kFlameRadius2 = 6.0f * 6.0f;     // presentation car "is the player" radius when finding it
+static const float kStickyRadius2 = 40.0f * 40.0f;  // ...and when it is already known: at 250+ km/h the two positions lag apart
 static std::atomic<int> g_pos_offset{-1};          // offset of the world position inside CCarDynamics
 static std::atomic<int> g_calib_report{0};         // 0 none, 1 learned, 2 failed (logged by the worker)
 static std::atomic<int> g_calib_best_hits{0};
@@ -286,6 +303,7 @@ static bool detour_cardynamics(void* this_ptr, void* rdx, void* r8, uint32_t r9,
     }
 
     g_physics_frames.fetch_add(1, std::memory_order_relaxed);
+    g_phys_tid.store(GetCurrentThreadId(), std::memory_order_relaxed);
 
     if (!this_ptr) return res;
 
@@ -354,44 +372,199 @@ static bool detour_cardynamics(void* this_ptr, void* rdx, void* r8, uint32_t r9,
 // Backfire Hook: Call at RVA 0x13B0DE6 in Anthem (CarPresentation11::UpdateBackfire)
 typedef void (*BackfirePrepFn)(void* r15);
 static BackfirePrepFn g_orig_backfire_prep = nullptr;
+static std::atomic<uint32_t> g_bf_driven{0};   // routine calls we made ourselves
+static std::atomic<uint32_t> g_bf_total{0};    // every hook call, nitro or not
+static std::atomic<uint32_t> g_bf_calls{0};    // hook calls while nitro is on
+static std::atomic<uint32_t> g_bf_matched{0};  // ...that were the player's car
+static std::atomic<int> g_bf_tips{0};          // real exhaust tips on the player car
+static char g_tip_diag[16] = "";               // per-tip status for the debug overlay
+static std::atomic<uint32_t> g_real_mask{0};    // tips the game itself flagged in its own backfire events for the player
+static std::atomic<uint32_t> g_real_events{0};  // how many such events were seen
+static std::atomic<bool> g_in_drive{false};     // true while our own driver is calling the routine
+static std::atomic<uintptr_t> g_mask_pres{0};   // the presentation (car) the learned tip mask belongs to
+
+// The game only runs its backfire routine when a cooldown timer on the car's presentation has expired
+// (about every 40 s for the player), so a nitro burst would get at most one flame. The player's
+// presentation is the one with the player's position stored at +0x50; remember it, and while nitro is
+// on keep that timer expired so the game runs the routine (and our flame hook) every frame.
+static const uintptr_t kPresPosOffset = 0x50;
+static const uintptr_t kTipsOffset = 0x15a0;      // 8 exhaust tip entries of 0x60 bytes in the presentation
+static const uintptr_t kBackfireObjOffset = 0x18a0;   // timer object inside the presentation (r15)
+static const uintptr_t kBackfireExpiryOffset = 0x18;  // next-fire time inside it
+static std::atomic<uintptr_t> g_player_pres{0};
+static std::atomic<uint64_t> g_player_pres_tick{0};
 
 static void detour_backfire_prep(void* r15) {
     if (g_orig_backfire_prep) {
         g_orig_backfire_prep(r15);
     }
 
-    if (!g_enabled.load() || !g_nitro_active.load() || !r15) {
+    g_bf_total.fetch_add(1, std::memory_order_relaxed);
+    if (!r15) return;
+
+    // r15 is CarPresentation11 + 0x18a0
+    uintptr_t car_pres = (uintptr_t)r15 - kBackfireObjOffset;
+
+    // Is this the player's presentation? It stores the player's position at +0x50.
+    bool is_target = false;
+    __try {
+        int pos_off = g_pos_offset.load();
+        uint64_t now = GetTickCount64();
+        if (pos_off >= 0 && now - g_player_pos_tick.load() < 200) {
+            float d2;
+            if (car_dist2((const void*)car_pres, (int)kPresPosOffset, &d2) &&
+                (d2 < kFlameRadius2 || (car_pres == g_player_pres.load() && d2 < kStickyRadius2))) {
+                is_target = true;
+                g_player_pres.store(car_pres);
+                g_player_pres_tick.store(now);
+            }
+        } else if (pos_off < 0) {
+            // Player not identified yet: fall back to any simulated car
+            void* car_dyn = *(void**)(car_pres + 0x10);
+            if (car_dyn && *(const int*)((uintptr_t)car_dyn + 0x178) == 1) is_target = true;
+        }
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+    }
+
+    if (!g_enabled.load() || !g_nitro_active.load()) {
         return;
     }
 
+    g_bf_calls.fetch_add(1, std::memory_order_relaxed);
+
     __try {
-        // r15 is CarPresentation11 + 0x18a0
-        uintptr_t car_pres = (uintptr_t)r15 - 0x18a0;
-        void* car_dyn = *(void**)(car_pres + 0x10);
-
-        bool is_target = (car_dyn && car_dyn == g_player_cardynamics);
-        if (!is_target && car_dyn && g_pos_offset.load() < 0) {
-            // Player's car not identified yet: fall back to any simulated car
-            int flag = *(const int*)((uintptr_t)car_dyn + 0x178);
-            if (flag == 1) is_target = true;
-        }
-
         if (is_target) {
-            static uint32_t flame_tick = 0;
-            flame_tick++;
-            uintptr_t exhaust_start = car_pres + 0x15a0;
-            int tip_idx = 0;
-            for (uintptr_t tip = exhaust_start; tip < (uintptr_t)r15; tip += 0x60, ++tip_idx) {
-                *(uint8_t*)(tip + 0x40) = 1; // Ignite exhaust backfire flame
-                // Clear existing particle handle every 3 ticks so continuous burst fires
-                if ((flame_tick % 3) == 0) {
-                    *(uint64_t*)(car_pres + 0x1498 + tip_idx * 0x10) = 0;
+            g_bf_matched.fetch_add(1, std::memory_order_relaxed);
+            // When the game fires its own backfire event its message already carries the right tips: leave it alone.
+            // When our driver is calling, flag the tips the game has flagged for this car in its own events (the
+            // routine then spawns a "BackFireInstance<N>" effect for each flagged tip whose handle slot,
+            // car_pres + 0x1498 + 0x10 * N, is empty). 8 is only the size of the tip array: a slot the car doesn't
+            // really have would get a flame in mid-air, so there is no fallback. Leave the handles alone: the game
+            // keeps the running effect attached to the exhaust through them.
+            if (g_in_drive.load()) {
+                uintptr_t exhaust_start = car_pres + 0x15a0;
+                int total = (int)(((uintptr_t)r15 - exhaust_start) / 0x60);
+                if (total > 8) total = 8;
+
+                uint32_t mask = (car_pres == g_mask_pres.load()) ? (g_real_mask.load() & 0xFF) : 0;
+                char diag[16];
+                int nvalid = 0;
+                for (int i = 0; i < total; ++i) {
+                    bool on = ((mask >> i) & 1) != 0;
+                    *(uint8_t*)(exhaust_start + (uintptr_t)i * 0x60 + 0x40) = on ? 1 : 0;
+                    diag[i] = on ? 'M' : '-';
+                    if (on) ++nvalid;
                 }
+                diag[total] = 0;
+                memcpy(g_tip_diag, diag, (size_t)total + 1);
+                g_bf_tips.store(nvalid, std::memory_order_relaxed);
             }
         }
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         // Safe protection
     }
+}
+
+// Entry of the game's backfire routine (RVA 0x13B0D70, vtable slot 76 of CarPresentation11). The game calls it
+// when the engine sim sends a backfire message. We note which thread that is, and learn which exhaust tips the
+// car really has from the tips the game itself flags for the player.
+typedef uint64_t (*BackfireEntryFn)(void* a, void* b, void* c, void* d);
+static BackfireEntryFn g_orig_backfire_entry = nullptr;
+static std::atomic<DWORD> g_bf_tid{0};   // thread the game runs its backfire routine on
+
+static uint64_t detour_backfire_entry(void* a, void* b, void* c, void* d) {
+    g_bf_tid.store(GetCurrentThreadId());
+
+    // A real backfire event for the player's car: the message (b) carries the flag byte (+0x40) of each tip
+    // the game wants to fire, and the game only flags tips the car really has. Remember them.
+    if (!g_in_drive.load() && a && b) {
+        __try {
+            uint64_t tnow = GetTickCount64();
+            float d2;
+            if (g_pos_offset.load() >= 0 && tnow - g_player_pos_tick.load() < 200 &&
+                car_dist2(a, (int)kPresPosOffset, &d2) &&
+                (d2 < kFlameRadius2 || ((uintptr_t)a == g_player_pres.load() && d2 < kStickyRadius2))) {
+                if ((uintptr_t)a != g_mask_pres.load()) {
+                    // A different car (or a reloaded one): what was learned no longer applies
+                    g_real_mask.store(0);
+                    g_real_events.store(0);
+                    g_mask_pres.store((uintptr_t)a);
+                }
+                uint32_t mask = 0;
+                for (int i = 0; i < 8; ++i) {
+                    if (*((const uint8_t*)b + i * 0x60 + 0x40) != 0) mask |= 1u << i;
+                }
+                g_real_mask.fetch_or(mask);
+                g_real_events.fetch_add(1);
+            }
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+        }
+    }
+
+    return g_orig_backfire_entry ? g_orig_backfire_entry(a, b, c, d) : 0;
+}
+
+// The game only calls its backfire routine when the engine sim sends a backfire message (rare), so nitro
+// would get at most one flame. While nitro is on, call the routine for the player's presentation every few
+// frames ourselves, with the presentation's own tips as the message; the flame hook then flags the real tips.
+// Runs from the game's per-frame step, and only on the same thread the game calls the routine on.
+static void drive_backfire_from_game_thread() {
+    if (!g_orig_backfire_entry || !g_enabled.load() || !g_nitro_active.load()) return;
+
+    DWORD tid = GetCurrentThreadId();
+    DWORD bf_tid = g_bf_tid.load();
+
+    if (bf_tid == 0 || tid != bf_tid) return;
+
+    // Wait until the game has shown which tips this car really has (its own backfire events carry that).
+    // No flames until then rather than flames on slots the car doesn't have.
+    uint64_t tnow = GetTickCount64();
+    if ((g_real_mask.load() & 0xFF) == 0 || g_mask_pres.load() != g_player_pres.load()) return;
+
+    static std::atomic<uint64_t> last_drive{0};
+    if (tnow - last_drive.load() < 40) return;
+    last_drive.store(tnow);
+
+    uintptr_t pres = g_player_pres.load();
+    uint64_t now = GetTickCount64();
+    if (!pres || now - g_player_pres_tick.load() > 120000 || g_pos_offset.load() < 0) return;
+    if (now - g_player_pos_tick.load() > 200) return;
+
+    alignas(16) static uint8_t message[0x400];
+    __try {
+        float d2;
+        if (!car_dist2((const void*)pres, (int)kPresPosOffset, &d2) || d2 > kStickyRadius2) return;
+        // The routine copies the 8 tip entries (0x60 bytes each) from this array into the presentation's own tips
+        // before it spawns the flames, then destroys the array. An empty array would wipe the tips' positions
+        // (flames spawn nowhere), so send the tips' current contents. Each entry holds a ref-counted pointer
+        // (+0x48 object, +0x50 control block with the use count at +8); the destroy step releases one
+        // reference per entry, so take one first, like the game's own copy does.
+        memset(message, 0, sizeof(message));
+        memcpy(message, (const void*)(pres + kTipsOffset), 8 * 0x60);
+        for (int i = 0; i < 8; ++i) {
+            uintptr_t block = *(uintptr_t*)(message + i * 0x60 + 0x50);
+            if (block) _InterlockedIncrement((volatile long*)(block + 8));
+        }
+        g_in_drive.store(true);
+        g_orig_backfire_entry((void*)pres, message, nullptr, nullptr);
+        g_in_drive.store(false);
+        g_bf_driven.fetch_add(1, std::memory_order_relaxed);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        g_in_drive.store(false);
+    }
+}
+
+// Per-frame step of the game's logic thread (RVA 0xFA78A0; this is the thread the backfire routine runs on).
+// Found from the call chain of a real backfire call: thread entry -> update loop -> this -> subsystem updates
+// -> backfire message handler. Takes (this, bool); no floating-point arguments.
+typedef uint64_t (*GameFrameFn)(void* self, void* flag);
+static GameFrameFn g_orig_game_frame = nullptr;
+
+static uint64_t detour_game_frame(void* self, void* flag) {
+    uint64_t r = g_orig_game_frame ? g_orig_game_frame(self, flag) : 0;
+    g_frame_tid.store(GetCurrentThreadId(), std::memory_order_relaxed);
+    drive_backfire_from_game_thread();
+    return r;
 }
 
 static void* g_game_base = nullptr;
@@ -531,6 +704,17 @@ static void detour_speedo_tick(void* speedo, float rpm) {
 
 // Settings callbacks
 static void on_setting_changed(void* user, const char* key, int value) {
+    if (strcmp(key, "DebugOverlay") == 0) {
+        g_debug.store(value != 0);
+        save_config();
+        return;
+    }
+    if (strcmp(key, "BackfireOnAllCars") == 0) {
+        g_backfire_all_cars.store(value != 0);
+        save_config();
+        if (g_api && g_mod) g_api->log(g_mod, value ? "Backfire on all cars on (applies after a restart)" : "Backfire on all cars off (applies after a restart)");
+        return;
+    }
     (void)user;
     if (strcmp(key, "NitroEnabled") == 0) {
         g_enabled.store(value != 0);
@@ -618,6 +802,22 @@ static void nitro_worker_thread() {
         }
     } else {
         g_api->log(g_mod, "Failed to create CCarDynamics hook.");
+    }
+
+    void* bf_entry = (void*)((uintptr_t)base + 0x13B0D70);
+    FH2Hook* hook_bfe = g_api->hook_function(g_mod, "CarPresentation11::UpdateBackfire", bf_entry, (void*)detour_backfire_entry, (void**)&g_orig_backfire_entry);
+    if (hook_bfe && g_api->enable_hooks(g_mod, hook_bfe)) {
+        g_api->log(g_mod, "UpdateBackfire entry hooked (learns which exhaust tips are real).");
+    } else {
+        g_api->log(g_mod, "Could not hook the UpdateBackfire entry.");
+    }
+
+    void* frame_fn = (void*)((uintptr_t)base + 0xFA78A0);
+    FH2Hook* hook_frame = g_api->hook_function(g_mod, "GameLogic::FrameStep", frame_fn, (void*)detour_game_frame, (void**)&g_orig_game_frame);
+    if (hook_frame && g_api->enable_hooks(g_mod, hook_frame)) {
+        g_api->log(g_mod, "Game logic frame step hooked (drives the exhaust flames during nitro).");
+    } else {
+        g_api->log(g_mod, "Could not hook the game logic frame step; flames will only fire on the game's own events.");
     }
 
     // Hook CWorldCollObjMan::Update (RVA 0x384C00) to read the player's position. WreckingBall hooks it
@@ -786,14 +986,185 @@ static void nitro_worker_thread() {
     }
 }
 
+// On-screen debug overlay: a transparent, click-through window laid over the game window, drawn with GDI.
+// Switched on from the Mods page. Needs the game in borderless or windowed mode, like ShowFPS.
+static char g_overlay_lines[24][180];
+static int g_overlay_count = 0;
+static HWND g_overlay_hwnd = nullptr;
+
+static void overlay_line(const char* fmt, ...) {
+    if (g_overlay_count >= 24) return;
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(g_overlay_lines[g_overlay_count], sizeof(g_overlay_lines[0]), fmt, ap);
+    va_end(ap);
+    ++g_overlay_count;
+}
+
+static void build_overlay_lines() {
+    g_overlay_count = 0;
+    uint64_t now = GetTickCount64();
+    uint64_t phys_age = now - g_last_physics_tick.load();
+    uint64_t speedo_age = now - g_last_speedo_tick.load();
+    uint64_t pos_age = now - g_player_pos_tick.load();
+    bool driving = phys_age < 200 && speedo_age < 200;
+    int up = g_up_axis.load();
+    int off = g_pos_offset.load();
+
+    overlay_line("FnFNitro debug");
+    overlay_line("nitro: enabled=%d active=%d lockout=%d fuel=%.1f/%.0f boost=%.2f",
+                 g_enabled.load() ? 1 : 0, g_nitro_active.load() ? 1 : 0, g_depleted_lockout.load() ? 1 : 0,
+                 g_current_fuel.load(), g_duration.load(), g_current_boost.load());
+    overlay_line("driving=%d  physics age=%llums  speedometer age=%llums", driving ? 1 : 0,
+                 (unsigned long long)phys_age, (unsigned long long)speedo_age);
+    if (off >= 0) {
+        overlay_line("player car: position offset=+0x%X  up axis=%c  position age=%llums", off,
+                     up >= 0 ? "XYZ"[up] : '?', (unsigned long long)pos_age);
+    } else {
+        overlay_line("player car: not located yet (drive for a few seconds)  up axis=%c", up >= 0 ? "XYZ"[up] : '?');
+    }
+    overlay_line("exhaust tips: %s  (M=flagged by game events, -=not) | events seen=%u mask=%02X (needs one real backfire event)",
+                 g_tip_diag[0] ? g_tip_diag : "(none yet)", g_real_events.load(), g_real_mask.load() & 0xFF);
+    overlay_line("flames: calls=%u matched=%u tips=%d | routine ran=%u | driven=%u",
+                 g_bf_calls.load(), g_bf_matched.load(), g_bf_tips.load(), g_bf_total.load(), g_bf_driven.load());
+    DWORD ft = g_frame_tid.load(), bt = g_bf_tid.load();
+    overlay_line("threads: game frame=%lu backfire=%lu %s | physics=%lu", (unsigned long)ft, (unsigned long)bt,
+                 (ft != 0 && ft == bt) ? "(same: flame driver runs)" : "(different: flame driver blocked)",
+                 (unsigned long)g_phys_tid.load());
+}
+
+static LRESULT CALLBACK overlay_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
+    switch (msg) {
+    case WM_ERASEBKGND:
+        return 1;
+    case WM_NCHITTEST:
+        return HTTRANSPARENT;
+    case WM_PAINT: {
+        PAINTSTRUCT ps;
+        HDC dc = BeginPaint(hwnd, &ps);
+        RECT rc;
+        GetClientRect(hwnd, &rc);
+
+        HBRUSH key = CreateSolidBrush(RGB(255, 0, 255));      // colour-keyed: becomes see-through
+        FillRect(dc, &rc, key);
+        DeleteObject(key);
+
+        const int line_h = 17;
+        int box_h = g_overlay_count * line_h + 10;
+        RECT box = {0, 0, rc.right, box_h};
+        HBRUSH bg = CreateSolidBrush(RGB(14, 14, 14));
+        FillRect(dc, &box, bg);
+        DeleteObject(bg);
+
+        HFONT font = CreateFontA(15, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
+                                 CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, FIXED_PITCH | FF_MODERN, "Consolas");
+        HGDIOBJ old = SelectObject(dc, font);
+        SetBkMode(dc, TRANSPARENT);
+        SetTextColor(dc, RGB(90, 255, 130));
+        for (int i = 0; i < g_overlay_count; ++i) {
+            TextOutA(dc, 6, 5 + i * line_h, g_overlay_lines[i], (int)strlen(g_overlay_lines[i]));
+        }
+        SelectObject(dc, old);
+        DeleteObject(font);
+        EndPaint(hwnd, &ps);
+        return 0;
+    }
+    default:
+        return DefWindowProcW(hwnd, msg, wp, lp);
+    }
+}
+
+struct FindGame {
+    DWORD pid;
+    HWND best;
+    long best_area;
+};
+
+static BOOL CALLBACK find_game_window(HWND hwnd, LPARAM lp) {
+    FindGame* f = (FindGame*)lp;
+    if (hwnd == g_overlay_hwnd || !IsWindowVisible(hwnd)) return TRUE;
+    DWORD pid = 0;
+    GetWindowThreadProcessId(hwnd, &pid);
+    if (pid != f->pid) return TRUE;
+    if (GetWindowLongW(hwnd, GWL_EXSTYLE) & WS_EX_TOOLWINDOW) return TRUE;
+    RECT rc;
+    GetClientRect(hwnd, &rc);
+    long area = (rc.right - rc.left) * (rc.bottom - rc.top);
+    if (area > f->best_area) {
+        f->best_area = area;
+        f->best = hwnd;
+    }
+    return TRUE;
+}
+
+static void debug_overlay_thread() {
+    WNDCLASSEXW wc{};
+    wc.cbSize = sizeof(wc);
+    wc.lpfnWndProc = overlay_proc;
+    wc.hInstance = GetModuleHandleW(nullptr);
+    wc.lpszClassName = L"FnFNitroDebugOverlay";
+    wc.hCursor = LoadCursorW(nullptr, (LPCWSTR)IDC_ARROW);
+    if (!RegisterClassExW(&wc)) return;
+
+    HWND hw = CreateWindowExW(WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
+                              wc.lpszClassName, L"FnFNitro debug", WS_POPUP, 0, 0, 100, 100,
+                              nullptr, nullptr, wc.hInstance, nullptr);
+    if (!hw) return;
+    g_overlay_hwnd = hw;
+    SetLayeredWindowAttributes(hw, RGB(255, 0, 255), 0, LWA_COLORKEY);
+
+    bool shown = false;
+    for (;;) {
+        MSG m;
+        while (PeekMessageW(&m, nullptr, 0, 0, PM_REMOVE)) {
+            TranslateMessage(&m);
+            DispatchMessageW(&m);
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+        if (!g_debug.load()) {
+            if (shown) { ShowWindow(hw, SW_HIDE); shown = false; }
+            continue;
+        }
+
+        FindGame f{GetCurrentProcessId(), nullptr, 0};
+        EnumWindows(find_game_window, (LPARAM)&f);
+        static HWND logged_for = (HWND)1;
+        if (f.best != logged_for && g_api && g_mod) {
+            logged_for = f.best;
+            char b[200];
+            if (f.best) {
+                RECT r0;
+                GetClientRect(f.best, &r0);
+                snprintf(b, sizeof(b), "debug overlay: game window found (%ldx%ld client)", r0.right, r0.bottom);
+            } else {
+                snprintf(b, sizeof(b), "debug overlay: no game window found, nothing to draw on");
+            }
+            g_api->log(g_mod, b);
+        }
+        if (!f.best) continue;
+        RECT cr;
+        GetClientRect(f.best, &cr);
+        POINT origin = {0, 0};
+        ClientToScreen(f.best, &origin);
+
+        build_overlay_lines();
+        int h = g_overlay_count * 17 + 10;
+        MoveWindow(hw, origin.x + 12, origin.y + 12, 760, h, TRUE);
+        SetWindowPos(hw, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+        shown = true;
+        InvalidateRect(hw, nullptr, TRUE);
+    }
+}
+
 FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
     g_api = api;
 
     FH2ModInfo info{};
     info.size             = sizeof(info);
-    info.name             = "Fast & Furious NOS in Forza Horizon 2";
+    info.name             = "NitroSystem";
     info.version          = FNFNITRO_VERSION;
-    info.github_repo      = nullptr;
+    info.github_repo      = "qiangqiang101/FnFNitroInFH2";
     info.platform_version = FH2MOD_PLATFORM_VERSION;
     info.check_updates    = 0;
     info.description      = "Fast & Furious Nitro system ported to Forza Horizon 2 (All Cars - LB to activate)";
@@ -801,7 +1172,7 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
     g_mod = api->register_mod(&info);
     if (!g_mod) return 1;
 
-    api->log(g_mod, "Fast & Furious NOS initializing (LB to boost)...");
+    api->log(g_mod, "NitroSystem initializing (LB to boost)...");
 
     // Initialize paths & load persistent settings from FnFNitro.ini
     init_paths();
@@ -817,6 +1188,25 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
         s_enable.value       = g_enabled.load() ? 1 : 0;
         s_enable.on_change   = on_setting_changed;
         api->add_setting(g_mod, &s_enable);
+
+        FH2Setting s_debug{};
+        s_debug.size        = sizeof(s_debug);
+        s_debug.key         = "DebugOverlay";
+        s_debug.label       = "Nitro Debug Overlay";
+        s_debug.description = "Draws nitro and flame debug info over the game (needs borderless/windowed mode).";
+        s_debug.value       = g_debug.load() ? 1 : 0;
+        s_debug.on_change   = on_setting_changed;
+        api->add_setting(g_mod, &s_debug);
+
+        FH2Setting s_backfire{};
+        s_backfire.size          = sizeof(s_backfire);
+        s_backfire.key           = "BackfireOnAllCars";
+        s_backfire.label         = "Backfire on All Cars";
+        s_backfire.description   = "Lets every car backfire, which the nitro exhaust flames need. Off leaves the game's own backfire settings alone. Takes effect after a restart.";
+        s_backfire.value         = g_backfire_all_cars.load() ? 1 : 0;
+        s_backfire.needs_restart = 1;
+        s_backfire.on_change     = on_setting_changed;
+        api->add_setting(g_mod, &s_backfire);
 
         if (api->api_version >= 5) {
             FH2Setting s_torque{};
@@ -878,16 +1268,19 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
             s_recharge.decimals      = 1;
             s_recharge.on_slide      = on_slider_changed;
             api->add_setting(g_mod, &s_recharge);
+
         }
     }
 
-    // Ensure all cars support exhaust backfire flames in gamedbRC
-    if (api->api_version >= 2 && api->add_sql) {
+    // Ensure all cars support exhaust backfire flames in gamedbRC (BackfireOnAllCars=0 in the ini turns this off;
+    // the nitro flames then only work on cars the game already lets backfire)
+    if (g_backfire_all_cars.load() && api->api_version >= 2 && api->add_sql) {
         api->add_sql(g_mod, "UPDATE BackfireLevels SET BackfireLevel = 3;");
     }
 
     // Launch background worker thread
     std::thread(nitro_worker_thread).detach();
+    std::thread(debug_overlay_thread).detach();
 
     api->log(g_mod, "Fast & Furious NOS initialized successfully.");
     return 0;

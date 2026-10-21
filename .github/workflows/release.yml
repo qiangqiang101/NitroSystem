@@ -1,0 +1,39 @@
+name: Release build
+
+# Runs only when a release is published on GitHub; nothing builds on ordinary pushes or pull requests.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write   # to attach the zip to the release
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Check out (with the platform submodule)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure
+        run: cmake -B build -A x64
+
+      - name: Build (Release)
+        run: cmake --build build --config Release
+
+      - name: Package
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: ./scripts/package-release.ps1 -Tag $env:RELEASE_TAG
+
+      - name: Attach the zip to the release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          $safe = $env:RELEASE_TAG -replace '[^A-Za-z0-9._-]', '-'
+          gh release upload "$env:RELEASE_TAG" "release/FnFNitro-$safe.zip" --clobber
