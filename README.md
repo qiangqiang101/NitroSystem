@@ -50,7 +50,6 @@ BackfireOnAllCars=1
 A few notes on the file:
 
 - `BackfireOnAllCars` is the **Backfire on All Cars** row on the Mods page. When it is on, the mod makes every car able to backfire by changing the game database at startup, which the flames depend on. Turn it off to leave the game's own backfire settings alone: flames then only work on cars the game already lets backfire. A change only takes effect the next time the game starts.
-- `TorqueScale` is limited to 2.0, the same as the slider. A higher value in the file is capped at 2.0.
 
 ### Debug overlay
 
