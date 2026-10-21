@@ -592,15 +592,6 @@
                                             <ScaleTransform ScaleX="{Binding XPos}"/>
                                         </Grid.RenderTransform>
                                         <Rectangle Width="59" Height="8" Fill="#FF2DB2FF"/>
-                                        <Rectangle Width="59" Height="8" Opacity="{Binding YPos}">
-                                            <Rectangle.Fill>
-                                                <LinearGradientBrush StartPoint="0.0,0.5" EndPoint="1.0,0.5">
-                                                    <GradientStop Color="#00FFFFFF" Offset="0.0"/>
-                                                    <GradientStop Color="#00FFFFFF" Offset="0.6"/>
-                                                    <GradientStop Color="#FFFFFFFF" Offset="1.0"/>
-                                                </LinearGradientBrush>
-                                            </Rectangle.Fill>
-                                        </Rectangle>
                                     </Grid>
                                 </Grid>
 
@@ -612,15 +603,6 @@
                                             <ScaleTransform ScaleX="{Binding XPos}"/>
                                         </Grid.RenderTransform>
                                         <Rectangle Width="59" Height="8" Fill="#FF2DB2FF"/>
-                                        <Rectangle Width="59" Height="8" Opacity="{Binding YPos}">
-                                            <Rectangle.Fill>
-                                                <LinearGradientBrush StartPoint="0.0,0.5" EndPoint="1.0,0.5">
-                                                    <GradientStop Color="#00FFFFFF" Offset="0.0"/>
-                                                    <GradientStop Color="#00FFFFFF" Offset="0.6"/>
-                                                    <GradientStop Color="#FFFFFFFF" Offset="1.0"/>
-                                                </LinearGradientBrush>
-                                            </Rectangle.Fill>
-                                        </Rectangle>
                                     </Grid>
                                 </Grid>
 
@@ -632,15 +614,6 @@
                                             <ScaleTransform ScaleX="{Binding XPos}"/>
                                         </Grid.RenderTransform>
                                         <Rectangle Width="59" Height="8" Fill="#FF2DB2FF"/>
-                                        <Rectangle Width="59" Height="8" Opacity="{Binding YPos}">
-                                            <Rectangle.Fill>
-                                                <LinearGradientBrush StartPoint="0.0,0.5" EndPoint="1.0,0.5">
-                                                    <GradientStop Color="#00FFFFFF" Offset="0.0"/>
-                                                    <GradientStop Color="#00FFFFFF" Offset="0.6"/>
-                                                    <GradientStop Color="#FFFFFFFF" Offset="1.0"/>
-                                                </LinearGradientBrush>
-                                            </Rectangle.Fill>
-                                        </Rectangle>
                                     </Grid>
                                 </Grid>
 
@@ -652,18 +625,33 @@
                                             <ScaleTransform ScaleX="{Binding XPos}"/>
                                         </Grid.RenderTransform>
                                         <Rectangle Width="59" Height="8" Fill="#FF2DB2FF"/>
-                                        <Rectangle Width="59" Height="8" Opacity="{Binding YPos}">
-                                            <Rectangle.Fill>
-                                                <LinearGradientBrush StartPoint="0.0,0.5" EndPoint="1.0,0.5">
-                                                    <GradientStop Color="#00FFFFFF" Offset="0.0"/>
-                                                    <GradientStop Color="#00FFFFFF" Offset="0.6"/>
-                                                    <GradientStop Color="#FFFFFFFF" Offset="1.0"/>
-                                                </LinearGradientBrush>
-                                            </Rectangle.Fill>
-                                        </Rectangle>
                                     </Grid>
                                 </Grid>
                             </StackPanel>
+                            <!-- One continuous tip glow across all 4 segments. YPos of RPMGaugeNumbers[17] is the pixel offset of its right edge
+                                 from the bar end (245px): the leading edge of the fill minus 245. Clipped to the bar; parked far left when idle. -->
+                            <Grid Width="245" Height="8" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="1,0,0,0" ClipToBounds="True">
+                                <Grid DataContext="{Binding RPMGaugeNumbers[17]}" Width="245" Height="8" HorizontalAlignment="Left">
+                                    <Grid.RenderTransform>
+                                        <TranslateTransform X="{Binding YPos}"/>
+                                    </Grid.RenderTransform>
+                                    <Rectangle Height="8" Margin="215,0,0,0" Fill="#2AEAFAFF"/>
+                                    <Rectangle Height="8" Margin="217,0,0,0" Fill="#2AEAFAFF"/>
+                                    <Rectangle Height="8" Margin="219,0,0,0" Fill="#2AEAFAFF"/>
+                                    <Rectangle Height="8" Margin="221,0,0,0" Fill="#2AEAFAFF"/>
+                                    <Rectangle Height="8" Margin="223,0,0,0" Fill="#2AEAFAFF"/>
+                                    <Rectangle Height="8" Margin="225,0,0,0" Fill="#2AEAFAFF"/>
+                                    <Rectangle Height="8" Margin="227,0,0,0" Fill="#2AEAFAFF"/>
+                                    <Rectangle Height="8" Margin="229,0,0,0" Fill="#2AEAFAFF"/>
+                                    <Rectangle Height="8" Margin="231,0,0,0" Fill="#2AEAFAFF"/>
+                                    <Rectangle Height="8" Margin="233,0,0,0" Fill="#2AEAFAFF"/>
+                                    <Rectangle Height="8" Margin="235,0,0,0" Fill="#2AEAFAFF"/>
+                                    <Rectangle Height="8" Margin="237,0,0,0" Fill="#2AEAFAFF"/>
+                                    <Rectangle Height="8" Margin="239,0,0,0" Fill="#2AEAFAFF"/>
+                                    <Rectangle Height="8" Margin="241,0,0,0" Fill="#2AEAFAFF"/>
+                                    <Rectangle Height="8" Margin="242,0,0,0" Fill="#FFFFFFFF"/>
+                                </Grid>
+                            </Grid>
                             <!-- Outer Bracket -->
                             <local:FZMaterial ImageSource="/ForzaUI;component/Textures/Data_Bound/SpireHUD/HUD_Nos_Outline_Digital_Bar.png"
                                               Width="260"
@@ -742,8 +730,6 @@
                     <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[14]}" Style="{StaticResource A_Style_FZMaterial_GaugeNumbers}" ImageSource="/ForzaUI;component/Textures/Anthem/HUD/Speedometer/HUD_Dial_RevNumbers_14.png"/>
 
                     <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[15]}" Style="{StaticResource A_Style_FZMaterial_GaugeNumbers}" ImageSource="/ForzaUI;component/Textures/Anthem/HUD/Speedometer/HUD_Dial_RevNumbers_15.png"/>
-
-                    <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[16]}" Style="{StaticResource A_Style_FZMaterial_GaugeNumbers}" ImageSource="/ForzaUI;component/Textures/Anthem/HUD/Speedometer/HUD_Dial_RevNumbers_16.png"/>
 
                     <local:FZMaterial Height="{StaticResource A_Double_Speedo_Analog_Height}" Width="{StaticResource A_Double_Speedo_Width}" RenderTransformOrigin="0.5,0.5" Data="{StaticResource A_FZGeometry_AnalogGaugeMesh}"> <!-- Gauge -->
                          <local:FZMaterial.Preset>
@@ -936,6 +922,334 @@
                                                              TipGlowFade="0.0"
                                                              AngleAmount="0.936"
                                                              BarWidth="0.051"
+                                                             BackgroundColor="#00000000"
+                                                             Ratio="{Binding XPos}"/>
+                        </local:FZMaterial.Preset>
+                    </local:FZMaterial>
+
+                    <!-- Authentic Fast & Furious NOS Active Glowing Tip -->
+                    <!-- Stacked translucent arcs, each ending on the fill's leading edge and narrower than the last.
+                         Their opacity adds up toward the tip, giving a smooth blue-to-white fade. Widest = kGlowTrail in nitro_mod.cpp. -->
+                    <!-- Fade pass 1: 12.0 deg -->
+                    <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[16]}"
+                                      Height="300"
+                                      Width="300"
+                                      RenderTransformOrigin="0.5,0.5"
+                                      Color="#22EAF8FF">
+                        <local:FZMaterial.RenderTransform>
+                            <TransformGroup>
+                                <RotateTransform Angle="{Binding YPos}"/>
+                                <RotateTransform Angle="-6.000"/>
+                                <ScaleTransform ScaleX="1.665"
+                                                ScaleY="1.665"/>
+                            </TransformGroup>
+                        </local:FZMaterial.RenderTransform>
+                        <local:FZMaterial.Preset>
+                            <local:FZMaterialPresetRadialBar TargetRatio="1.0"
+                                                             ShadowIntensity="0"
+                                                             TipGlowFade="0.0"
+                                                             AngleAmount="0.9587"
+                                                             BarWidth="0.051"
+                                                             BackgroundColor="#00000000"
+                                                             Ratio="{Binding XPos}"/>
+                        </local:FZMaterial.Preset>
+                    </local:FZMaterial>
+
+                    <!-- Fade pass 2: 11.0 deg -->
+                    <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[16]}"
+                                      Height="300"
+                                      Width="300"
+                                      RenderTransformOrigin="0.5,0.5"
+                                      Color="#22EAF8FF">
+                        <local:FZMaterial.RenderTransform>
+                            <TransformGroup>
+                                <RotateTransform Angle="{Binding YPos}"/>
+                                <RotateTransform Angle="-5.500"/>
+                                <ScaleTransform ScaleX="1.665"
+                                                ScaleY="1.665"/>
+                            </TransformGroup>
+                        </local:FZMaterial.RenderTransform>
+                        <local:FZMaterial.Preset>
+                            <local:FZMaterialPresetRadialBar TargetRatio="1.0"
+                                                             ShadowIntensity="0"
+                                                             TipGlowFade="0.0"
+                                                             AngleAmount="0.9614"
+                                                             BarWidth="0.051"
+                                                             BackgroundColor="#00000000"
+                                                             Ratio="{Binding XPos}"/>
+                        </local:FZMaterial.Preset>
+                    </local:FZMaterial>
+
+                    <!-- Fade pass 3: 10.0 deg -->
+                    <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[16]}"
+                                      Height="300"
+                                      Width="300"
+                                      RenderTransformOrigin="0.5,0.5"
+                                      Color="#22EAF8FF">
+                        <local:FZMaterial.RenderTransform>
+                            <TransformGroup>
+                                <RotateTransform Angle="{Binding YPos}"/>
+                                <RotateTransform Angle="-5.000"/>
+                                <ScaleTransform ScaleX="1.665"
+                                                ScaleY="1.665"/>
+                            </TransformGroup>
+                        </local:FZMaterial.RenderTransform>
+                        <local:FZMaterial.Preset>
+                            <local:FZMaterialPresetRadialBar TargetRatio="1.0"
+                                                             ShadowIntensity="0"
+                                                             TipGlowFade="0.0"
+                                                             AngleAmount="0.9641"
+                                                             BarWidth="0.051"
+                                                             BackgroundColor="#00000000"
+                                                             Ratio="{Binding XPos}"/>
+                        </local:FZMaterial.Preset>
+                    </local:FZMaterial>
+
+                    <!-- Fade pass 4: 9.0 deg -->
+                    <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[16]}"
+                                      Height="300"
+                                      Width="300"
+                                      RenderTransformOrigin="0.5,0.5"
+                                      Color="#22EAF8FF">
+                        <local:FZMaterial.RenderTransform>
+                            <TransformGroup>
+                                <RotateTransform Angle="{Binding YPos}"/>
+                                <RotateTransform Angle="-4.500"/>
+                                <ScaleTransform ScaleX="1.665"
+                                                ScaleY="1.665"/>
+                            </TransformGroup>
+                        </local:FZMaterial.RenderTransform>
+                        <local:FZMaterial.Preset>
+                            <local:FZMaterialPresetRadialBar TargetRatio="1.0"
+                                                             ShadowIntensity="0"
+                                                             TipGlowFade="0.0"
+                                                             AngleAmount="0.9669"
+                                                             BarWidth="0.051"
+                                                             BackgroundColor="#00000000"
+                                                             Ratio="{Binding XPos}"/>
+                        </local:FZMaterial.Preset>
+                    </local:FZMaterial>
+
+                    <!-- Fade pass 5: 8.0 deg -->
+                    <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[16]}"
+                                      Height="300"
+                                      Width="300"
+                                      RenderTransformOrigin="0.5,0.5"
+                                      Color="#22EAF8FF">
+                        <local:FZMaterial.RenderTransform>
+                            <TransformGroup>
+                                <RotateTransform Angle="{Binding YPos}"/>
+                                <RotateTransform Angle="-4.000"/>
+                                <ScaleTransform ScaleX="1.665"
+                                                ScaleY="1.665"/>
+                            </TransformGroup>
+                        </local:FZMaterial.RenderTransform>
+                        <local:FZMaterial.Preset>
+                            <local:FZMaterialPresetRadialBar TargetRatio="1.0"
+                                                             ShadowIntensity="0"
+                                                             TipGlowFade="0.0"
+                                                             AngleAmount="0.9696"
+                                                             BarWidth="0.051"
+                                                             BackgroundColor="#00000000"
+                                                             Ratio="{Binding XPos}"/>
+                        </local:FZMaterial.Preset>
+                    </local:FZMaterial>
+
+                    <!-- Fade pass 6: 7.0 deg -->
+                    <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[16]}"
+                                      Height="300"
+                                      Width="300"
+                                      RenderTransformOrigin="0.5,0.5"
+                                      Color="#22EAF8FF">
+                        <local:FZMaterial.RenderTransform>
+                            <TransformGroup>
+                                <RotateTransform Angle="{Binding YPos}"/>
+                                <RotateTransform Angle="-3.500"/>
+                                <ScaleTransform ScaleX="1.665"
+                                                ScaleY="1.665"/>
+                            </TransformGroup>
+                        </local:FZMaterial.RenderTransform>
+                        <local:FZMaterial.Preset>
+                            <local:FZMaterialPresetRadialBar TargetRatio="1.0"
+                                                             ShadowIntensity="0"
+                                                             TipGlowFade="0.0"
+                                                             AngleAmount="0.9724"
+                                                             BarWidth="0.051"
+                                                             BackgroundColor="#00000000"
+                                                             Ratio="{Binding XPos}"/>
+                        </local:FZMaterial.Preset>
+                    </local:FZMaterial>
+
+                    <!-- Fade pass 7: 6.0 deg -->
+                    <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[16]}"
+                                      Height="300"
+                                      Width="300"
+                                      RenderTransformOrigin="0.5,0.5"
+                                      Color="#22EAF8FF">
+                        <local:FZMaterial.RenderTransform>
+                            <TransformGroup>
+                                <RotateTransform Angle="{Binding YPos}"/>
+                                <RotateTransform Angle="-3.000"/>
+                                <ScaleTransform ScaleX="1.665"
+                                                ScaleY="1.665"/>
+                            </TransformGroup>
+                        </local:FZMaterial.RenderTransform>
+                        <local:FZMaterial.Preset>
+                            <local:FZMaterialPresetRadialBar TargetRatio="1.0"
+                                                             ShadowIntensity="0"
+                                                             TipGlowFade="0.0"
+                                                             AngleAmount="0.9751"
+                                                             BarWidth="0.051"
+                                                             BackgroundColor="#00000000"
+                                                             Ratio="{Binding XPos}"/>
+                        </local:FZMaterial.Preset>
+                    </local:FZMaterial>
+
+                    <!-- Fade pass 8: 5.0 deg -->
+                    <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[16]}"
+                                      Height="300"
+                                      Width="300"
+                                      RenderTransformOrigin="0.5,0.5"
+                                      Color="#22EAF8FF">
+                        <local:FZMaterial.RenderTransform>
+                            <TransformGroup>
+                                <RotateTransform Angle="{Binding YPos}"/>
+                                <RotateTransform Angle="-2.500"/>
+                                <ScaleTransform ScaleX="1.665"
+                                                ScaleY="1.665"/>
+                            </TransformGroup>
+                        </local:FZMaterial.RenderTransform>
+                        <local:FZMaterial.Preset>
+                            <local:FZMaterialPresetRadialBar TargetRatio="1.0"
+                                                             ShadowIntensity="0"
+                                                             TipGlowFade="0.0"
+                                                             AngleAmount="0.9779"
+                                                             BarWidth="0.051"
+                                                             BackgroundColor="#00000000"
+                                                             Ratio="{Binding XPos}"/>
+                        </local:FZMaterial.Preset>
+                    </local:FZMaterial>
+
+                    <!-- Fade pass 9: 4.0 deg -->
+                    <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[16]}"
+                                      Height="300"
+                                      Width="300"
+                                      RenderTransformOrigin="0.5,0.5"
+                                      Color="#22EAF8FF">
+                        <local:FZMaterial.RenderTransform>
+                            <TransformGroup>
+                                <RotateTransform Angle="{Binding YPos}"/>
+                                <RotateTransform Angle="-2.000"/>
+                                <ScaleTransform ScaleX="1.665"
+                                                ScaleY="1.665"/>
+                            </TransformGroup>
+                        </local:FZMaterial.RenderTransform>
+                        <local:FZMaterial.Preset>
+                            <local:FZMaterialPresetRadialBar TargetRatio="1.0"
+                                                             ShadowIntensity="0"
+                                                             TipGlowFade="0.0"
+                                                             AngleAmount="0.9806"
+                                                             BarWidth="0.051"
+                                                             BackgroundColor="#00000000"
+                                                             Ratio="{Binding XPos}"/>
+                        </local:FZMaterial.Preset>
+                    </local:FZMaterial>
+
+                    <!-- Fade pass 10: 3.0 deg -->
+                    <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[16]}"
+                                      Height="300"
+                                      Width="300"
+                                      RenderTransformOrigin="0.5,0.5"
+                                      Color="#22EAF8FF">
+                        <local:FZMaterial.RenderTransform>
+                            <TransformGroup>
+                                <RotateTransform Angle="{Binding YPos}"/>
+                                <RotateTransform Angle="-1.500"/>
+                                <ScaleTransform ScaleX="1.665"
+                                                ScaleY="1.665"/>
+                            </TransformGroup>
+                        </local:FZMaterial.RenderTransform>
+                        <local:FZMaterial.Preset>
+                            <local:FZMaterialPresetRadialBar TargetRatio="1.0"
+                                                             ShadowIntensity="0"
+                                                             TipGlowFade="0.0"
+                                                             AngleAmount="0.9834"
+                                                             BarWidth="0.051"
+                                                             BackgroundColor="#00000000"
+                                                             Ratio="{Binding XPos}"/>
+                        </local:FZMaterial.Preset>
+                    </local:FZMaterial>
+
+                    <!-- Fade pass 11: 2.0 deg -->
+                    <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[16]}"
+                                      Height="300"
+                                      Width="300"
+                                      RenderTransformOrigin="0.5,0.5"
+                                      Color="#22EAF8FF">
+                        <local:FZMaterial.RenderTransform>
+                            <TransformGroup>
+                                <RotateTransform Angle="{Binding YPos}"/>
+                                <RotateTransform Angle="-1.000"/>
+                                <ScaleTransform ScaleX="1.665"
+                                                ScaleY="1.665"/>
+                            </TransformGroup>
+                        </local:FZMaterial.RenderTransform>
+                        <local:FZMaterial.Preset>
+                            <local:FZMaterialPresetRadialBar TargetRatio="1.0"
+                                                             ShadowIntensity="0"
+                                                             TipGlowFade="0.0"
+                                                             AngleAmount="0.9861"
+                                                             BarWidth="0.051"
+                                                             BackgroundColor="#00000000"
+                                                             Ratio="{Binding XPos}"/>
+                        </local:FZMaterial.Preset>
+                    </local:FZMaterial>
+
+                    <!-- Fade pass 12: 1.0 deg -->
+                    <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[16]}"
+                                      Height="300"
+                                      Width="300"
+                                      RenderTransformOrigin="0.5,0.5"
+                                      Color="#22EAF8FF">
+                        <local:FZMaterial.RenderTransform>
+                            <TransformGroup>
+                                <RotateTransform Angle="{Binding YPos}"/>
+                                <RotateTransform Angle="-0.500"/>
+                                <ScaleTransform ScaleX="1.665"
+                                                ScaleY="1.665"/>
+                            </TransformGroup>
+                        </local:FZMaterial.RenderTransform>
+                        <local:FZMaterial.Preset>
+                            <local:FZMaterialPresetRadialBar TargetRatio="1.0"
+                                                             ShadowIntensity="0"
+                                                             TipGlowFade="0.0"
+                                                             AngleAmount="0.9888"
+                                                             BarWidth="0.051"
+                                                             BackgroundColor="#00000000"
+                                                             Ratio="{Binding XPos}"/>
+                        </local:FZMaterial.Preset>
+                    </local:FZMaterial>
+
+                    <!-- Bright tip speck -->
+                    <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[16]}"
+                                      Height="300"
+                                      Width="300"
+                                      RenderTransformOrigin="0.5,0.5"
+                                      Color="#FFFFFFFF">
+                        <local:FZMaterial.RenderTransform>
+                            <TransformGroup>
+                                <RotateTransform Angle="{Binding YPos}"/>
+                                <RotateTransform Angle="-0.700"/>
+                                <ScaleTransform ScaleX="1.665"
+                                                ScaleY="1.665"/>
+                            </TransformGroup>
+                        </local:FZMaterial.RenderTransform>
+                        <local:FZMaterial.Preset>
+                            <local:FZMaterialPresetRadialBar TargetRatio="1.0"
+                                                             ShadowIntensity="0"
+                                                             TipGlowFade="0.0"
+                                                             AngleAmount="0.9877"
+                                                             BarWidth="0.058"
                                                              BackgroundColor="#00000000"
                                                              Ratio="{Binding XPos}"/>
                         </local:FZMaterial.Preset>

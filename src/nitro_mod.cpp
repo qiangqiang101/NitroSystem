@@ -213,17 +213,52 @@ static void detour_speedo_tick(void* speedo, float rpm) {
         float s3 = clamp01((total_ratio - 0.50f) / 0.25f);
         float s4 = clamp01((total_ratio - 0.75f) / 0.25f);
 
-        // Tip glow must remain 0.0f because TipGlowFade > 0 triggers a Durango radial shader
-        // defect where the entire 300x300 rotated bounding quad renders as solid white.
-        float g1 = 0.0f, g2 = 0.0f, g3 = 0.0f, g4 = 0.0f;
+        // Active nitrous glowing tip cap (follows the exact leading edge of the draining NOS bar):
+        bool active = g_nitro_active.load();
+        float glow_scale = 0.0f;
+        float leading_angle = 55.87f;
 
-        // NOTE: We deliberately do NOT touch [speedo + 0x14c] (GaugeSmallDashAmount).
-        // GaugeSmallDashAmount and GaugeLargeDashAmount are authentic RPM tick mark intervals
-        // calculated by the game engine for the gauge mesh dividers.
+        if (s4 > 0.001f) {
+            leading_angle = 118.57f + s4 * 20.26f;
+        } else if (s3 > 0.001f) {
+            leading_angle = 97.67f + s3 * 20.26f;
+        } else if (s2 > 0.001f) {
+            leading_angle = 76.77f + s2 * 20.26f;
+        } else {
+            leading_angle = 55.87f + s1 * 20.26f;
+        }
 
-        // Drive the 4 NOS segments (and active tip glow) via RPMGaugeNumbers[17..20] XPos/YPos.
-        // Elements 17..20 are unused by the RPM dial (cars don't rev to 17k+ RPM) and their
-        // XPos and YPos properties are native AVUI floats that bind flawlessly in XAML.
+        // The glow passes are narrow RadialBar tracks (AngleAmount sets the width) centered on the
+        // rotation angle, so Ratio 1.0 fills the whole track and YPos is the leading edge. The
+        // XAML offsets slide each pass back so it ends on the edge.
+        // The widest pass trails kGlowTrail degrees behind the edge. Near empty, park the glow where
+        // its tail meets the bar start and shrink Ratio so it fades out instead of overhanging.
+        const float kBarStart = 55.87f;
+        const float kGlowTrail = 12.0f;
+        if (active && total_ratio > 0.005f) {
+            float room = leading_angle - kBarStart;
+            if (room >= kGlowTrail) {
+                glow_scale = 1.0f;
+            } else {
+                glow_scale = room / kGlowTrail;
+                leading_angle = kBarStart + kGlowTrail;
+            }
+        }
+
+        // Digital HUD: one continuous tip glow slides along the whole 245px bar (4 segments of 59px
+        // with 3px gaps, so a 62px pitch). Segment 1's YPos carries the glow's right edge as an
+        // offset from the bar end, or -1000 to park it off the bar. The analog HUD ignores it.
+        const float kBarWidth = 245.0f;
+        const float kSegPitch = 62.0f;
+        const float kSegWidth = 59.0f;
+        float tip_x = -1000.0f;
+        if (active && total_ratio > 0.005f) {
+            const float seg_fill[4] = {s1, s2, s3, s4};
+            int lead = (s4 > 0.001f) ? 3 : (s3 > 0.001f) ? 2 : (s2 > 0.001f) ? 1 : 0;
+            tip_x = lead * kSegPitch + kSegWidth * seg_fill[lead] - kBarWidth;
+        }
+
+        // Drive the 4 NOS segments via RPMGaugeNumbers[17..20] and the glowing tip cap on [16].
         void* arr_wrapper = *(void**)((uintptr_t)speedo + 0x150);
         if (arr_wrapper) {
             void* p50 = *(void**)((uintptr_t)arr_wrapper + 0x50);
@@ -244,13 +279,14 @@ static void detour_speedo_tick(void* speedo, float rpm) {
 
                         struct SegTarget {
                             int idx;
-                            float ratio;
-                            float glow;
-                        } targets[4] = {
-                            {17, s1, g1}, // Segment 1 (Bottom)
-                            {18, s2, g2}, // Segment 2
-                            {19, s3, g3}, // Segment 3
-                            {20, s4, g4}  // Segment 4 (Top)
+                            float x;
+                            float y;
+                        } targets[5] = {
+                            {17, s1, tip_x},                 // Segment 1 (Bottom); Y = digital glow offset
+                            {18, s2, 0.0f},                  // Segment 2
+                            {19, s3, 0.0f},                  // Segment 3
+                            {20, s4, 0.0f},                  // Segment 4 (Top)
+                            {16, glow_scale, leading_angle}  // Active Glowing Tip Cap (X=Ratio, Y=Angle)
                         };
 
                         for (const auto& t : targets) {
@@ -258,14 +294,14 @@ static void detour_speedo_tick(void* speedo, float rpm) {
                             if (!item) continue;
 
                             float* p_x = (float*)((uintptr_t)item + 0x38);
-                            if (fabsf(*p_x - t.ratio) > 0.0005f) {
-                                *p_x = t.ratio;
+                            if (fabsf(*p_x - t.x) > 0.0005f) {
+                                *p_x = t.x;
                                 if (prop_xpos) raise_item_prop(item, prop_xpos);
                             }
 
                             float* p_y = (float*)((uintptr_t)item + 0x3c);
-                            if (fabsf(*p_y - t.glow) > 0.005f) {
-                                *p_y = t.glow;
+                            if (fabsf(*p_y - t.y) > 0.005f) {
+                                *p_y = t.y;
                                 if (prop_ypos) raise_item_prop(item, prop_ypos);
                             }
                         }
