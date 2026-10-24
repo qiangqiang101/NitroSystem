@@ -32,8 +32,10 @@ Hold **LB** (or any button you pick) to burn nitro: your car gets a strong push,
 | Nitro Boost Multiplier | 1.0x - 2.0x | 1.6x | Strength of the push. |
 | Nitro Tank Capacity (sec) | 5 - 60 | 20 | Seconds of nitro in a full tank. |
 | Nitro Buildup Time (sec) | 0.1 - 2.0 | 0.5 | How long the push takes to ramp up. |
-| Nitro Recharge Rate | 0.0 - 1.0 | 1.0 | Seconds of nitro restored per second while not boosting. |
+| Nitro Recharge Rate | 0.0 - 1.0 | 0.2 | Seconds of nitro restored per second while not boosting. |
 | Backfire on All Cars | On / Off | On | Lets every car backfire, which the exhaust flames need (see below). **Needs a game restart.** |
+| Refill Nitro on Race Start | On / Off | On | Fills the tank when a race starts, you quit one, you change car or you fast travel. Applies right away. |
+| Refund Nitro on Rewind | On / Off | On | Rewinding gives back the nitro you used since the point you rewind to. Applies right away. |
 
 Settings are saved to `fh2-mods\FnFNitro.ini`:
 
@@ -44,9 +46,11 @@ NitroButton=LB
 TorqueScale=1.60
 Duration=20.0
 BuildupTime=0.50
-RechargeRate=1.00
+RechargeRate=0.20
 DebugOverlay=0
 BackfireOnAllCars=1
+RefillOnRaceStart=1
+RefundOnRewind=1
 ```
 
 A few notes on the file:

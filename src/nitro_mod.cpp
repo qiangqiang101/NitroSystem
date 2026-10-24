@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <cstring>
 #include <thread>
+#include <vector>
 
 #pragma comment(lib, "winmm.lib")
 
@@ -22,10 +23,12 @@ static FH2Mod* g_mod = nullptr;
 static std::atomic<bool> g_enabled{true};
 static std::atomic<bool> g_debug{false};          // on-screen debug overlay (Mods page)
 static std::atomic<bool> g_backfire_all_cars{true};  // "Backfire on All Cars": applied to the database at startup (needs a restart)
+static std::atomic<bool> g_refund_on_rewind{true};   // "Refund Nitro on Rewind": a rewind gives back the nitro used since the point it returns to
+static std::atomic<bool> g_refill_on_start{true};    // "Refill Nitro on Race Start": full tank when the car is put somewhere else
 static std::atomic<float> g_torque_scale{1.6f};      // Spire default TorqueScale = 1.6
 static std::atomic<float> g_duration{20.0f};         // Spire default Duration = 20s
 static std::atomic<float> g_buildup_time{0.5f};      // Spire default BuildupTime = 0.5s
-static std::atomic<float> g_recharge_rate{1.0f};     // 1 second of nitro recharged per second idle
+static std::atomic<float> g_recharge_rate{0.2f};     // 0.2 seconds of nitro recharged per second idle
 
 static std::atomic<bool> g_nitro_active{false};
 static std::atomic<bool> g_depleted_lockout{false};
@@ -87,6 +90,8 @@ static void load_config() {
     g_enabled.store(en != 0);
     g_debug.store(GetPrivateProfileIntW(L"Settings", L"DebugOverlay", 0, g_ini_path) != 0);
     g_backfire_all_cars.store(GetPrivateProfileIntW(L"Settings", L"BackfireOnAllCars", 1, g_ini_path) != 0);
+    g_refill_on_start.store(GetPrivateProfileIntW(L"Settings", L"RefillOnRaceStart", 1, g_ini_path) != 0);
+    g_refund_on_rewind.store(GetPrivateProfileIntW(L"Settings", L"RefundOnRewind", 1, g_ini_path) != 0);
 
     wchar_t buf[64];
     if (GetPrivateProfileStringW(L"Settings", L"TorqueScale", L"1.6", buf, 64, g_ini_path) > 0) {
@@ -105,7 +110,7 @@ static void load_config() {
         float val = wcstof(buf, nullptr);
         if (val >= 0.1f && val <= 2.0f) g_buildup_time.store(val);
     }
-    if (GetPrivateProfileStringW(L"Settings", L"RechargeRate", L"1.0", buf, 64, g_ini_path) > 0) {
+    if (GetPrivateProfileStringW(L"Settings", L"RechargeRate", L"0.2", buf, 64, g_ini_path) > 0) {
         float val = wcstof(buf, nullptr);
         if (val >= 0.0f && val <= 5.0f) g_recharge_rate.store(val);
     }
@@ -120,6 +125,8 @@ static void save_config() {
     WritePrivateProfileStringW(L"Settings", L"NitroEnabled", g_enabled.load() ? L"1" : L"0", g_ini_path);
     WritePrivateProfileStringW(L"Settings", L"DebugOverlay", g_debug.load() ? L"1" : L"0", g_ini_path);
     WritePrivateProfileStringW(L"Settings", L"BackfireOnAllCars", g_backfire_all_cars.load() ? L"1" : L"0", g_ini_path);
+    WritePrivateProfileStringW(L"Settings", L"RefillOnRaceStart", g_refill_on_start.load() ? L"1" : L"0", g_ini_path);
+    WritePrivateProfileStringW(L"Settings", L"RefundOnRewind", g_refund_on_rewind.load() ? L"1" : L"0", g_ini_path);
     swprintf_s(buf, 64, L"%.2f", g_torque_scale.load());
     WritePrivateProfileStringW(L"Settings", L"TorqueScale", buf, g_ini_path);
     swprintf_s(buf, 64, L"%.1f", g_duration.load());
@@ -745,6 +752,16 @@ static void on_setting_changed(void* user, const char* key, int value) {
         save_config();
         return;
     }
+    if (strcmp(key, "RefundOnRewind") == 0) {
+        g_refund_on_rewind.store(value != 0);
+        save_config();
+        return;
+    }
+    if (strcmp(key, "RefillOnRaceStart") == 0) {
+        g_refill_on_start.store(value != 0);
+        save_config();
+        return;
+    }
     if (strcmp(key, "BackfireOnAllCars") == 0) {
         g_backfire_all_cars.store(value != 0);
         save_config();
@@ -818,6 +835,98 @@ static void stop_nitro_audio() {
     if (g_sound_stop_path[0] != L'\0') {
         PlaySoundW(g_sound_stop_path, NULL, SND_ASYNC | SND_FILENAME | SND_NODEFAULT);
     }
+}
+
+// Fill the tank. One cooldown for every trigger below, since a single transition can set off several.
+static void refill_nitro(const char* why, uint64_t now) {
+    static uint64_t last_refill = 0;
+    if (now - last_refill < 3000) return;
+    last_refill = now;
+    float full = g_duration.load();
+    if (g_current_fuel.load() < full - 0.05f || g_depleted_lockout.load()) {
+        g_current_fuel.store(full);
+        g_depleted_lockout.store(false);
+        char msg[128];
+        snprintf(msg, sizeof(msg), "Nitro tank refilled (%s).", why);
+        g_api->log(g_mod, msg);
+    }
+}
+
+// Starting or leaving a race, quitting one, changing car, fast travelling and rewinding all hide the HUD speedometer
+// while the car keeps simulating (a pause doesn't: physics stops with it, and on resuming the speedometer comes
+// back before physics does). So: arm when the speedometer has been off for 2 s with physics running, or when
+// physics resumes with it off, and act when it comes back.
+//
+// What to do depends on where the car ends up (seen in the logs):
+//   - a rewind replays the car's recorded path backwards for several seconds, ending 40 m or more from where the
+//     speedometer went off, on a spot the car passed a few seconds earlier: give back the nitro used since then;
+//   - anything else (race start, quit, car change, fast travel) fills the tank.
+// The path is recorded while the speedometer is on, and frozen while it is off.
+struct FuelSample {
+    float pos[3];
+    float fuel;
+    uint64_t tick;
+};
+
+static float dist3(const float* a, const float* b) {
+    float dx = a[0] - b[0], dy = a[1] - b[1], dz = a[2] - b[2];
+    return sqrtf(dx * dx + dy * dy + dz * dz);
+}
+
+static void nitro_hud_events(bool physics, bool speedo, uint64_t now) {
+    static std::vector<FuelSample> path;   // newest last; one minute at 10 samples a second
+    static float freeze_pos[3] = {0.0f, 0.0f, 0.0f};
+    static bool prev_physics = false;
+    static bool prev_speedo = false;
+    static uint64_t off_since = 0;
+    static bool armed = false;
+
+    float cur[3] = {g_player_pos[0], g_player_pos[1], g_player_pos[2]};
+    bool pos_fresh = (now - g_player_pos_tick.load()) < 200;
+
+    if (speedo && physics && pos_fresh && !armed && (path.empty() || now - path.back().tick >= 100)) {
+        path.push_back({{cur[0], cur[1], cur[2]}, g_current_fuel.load(), now});
+        if (path.size() > 600) path.erase(path.begin());
+    }
+
+    if (prev_speedo && !speedo) {   // the speedometer just went off: where the car was
+        freeze_pos[0] = cur[0]; freeze_pos[1] = cur[1]; freeze_pos[2] = cur[2];
+    }
+    if (physics && !speedo) {
+        if (off_since == 0) off_since = now;
+        if (!prev_physics || now - off_since >= 2000) armed = true;
+    } else {
+        off_since = 0;
+    }
+
+    if (speedo && physics && armed) {
+        armed = false;
+        int best = -1;
+        float best_d = 25.0f;
+        if (dist3(cur, freeze_pos) > 40.0f) {
+            for (int i = 0; i < (int)path.size(); ++i) {
+                float d = dist3(cur, path[i].pos);
+                if (d < best_d) { best_d = d; best = i; }
+            }
+        }
+        char msg[128];
+        if (best >= 0) {   // a rewind
+            float then = path[best].fuel;
+            path.resize((size_t)best + 1);   // what came after that point was undone
+            if (g_refund_on_rewind.load() && then > g_current_fuel.load() + 0.05f) {
+                g_current_fuel.store(then);
+                if (then >= 2.0f) g_depleted_lockout.store(false);
+                snprintf(msg, sizeof(msg), "Rewind: nitro tank restored to %.1f s (back %.0f m, matched within %.0f m).", then,
+                         dist3(cur, freeze_pos), best_d);
+                g_api->log(g_mod, msg);
+            }
+        } else {
+            path.clear();   // somewhere new: the old path no longer leads here
+            if (g_refill_on_start.load()) refill_nitro("race start / quit / car change / fast travel", now);
+        }
+    }
+    prev_physics = physics;
+    prev_speedo = speedo;
 }
 
 // Background thread: handles gamepad input polling, state-machine, audio & haptics
@@ -939,6 +1048,10 @@ static void nitro_worker_thread() {
         uint64_t now_ms = GetTickCount64();
         bool physics_active = (now_ms - g_last_physics_tick.load()) < 200;
         bool driving = physics_active && (now_ms - g_last_speedo_tick.load()) < 200;
+
+        if (g_refund_on_rewind.load() || g_refill_on_start.load())
+            nitro_hud_events(physics_active, (now_ms - g_last_speedo_tick.load()) < 200, now_ms);
+
         if (!driving) {
             // Nothing is simulated: no nitro, and the tank neither drains nor recharges.
             if (g_nitro_active.load()) {
@@ -1208,12 +1321,12 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
     FH2ModInfo info{};
     info.size             = sizeof(info);
     info.name             = "NitroSystem";
-    info.version          = "1.1.0";
+    info.version          = "1.2.0";
     info.github_repo      = "qiangqiang101/NitroSystem";
-    info.platform_version = "1.1.0";
-    info.check_updates    = 0;
+    info.platform_version = FH2MOD_PLATFORM_VERSION;
+    info.check_updates    = 1;
     info.description      = "Fast & Furious Nitro system ported to Forza Horizon 2 (All Cars - LB to activate)";
-
+    
     g_mod = api->register_mod(&info);
     if (!g_mod) return 1;
 
@@ -1252,6 +1365,24 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
         s_backfire.needs_restart = 1;
         s_backfire.on_change     = on_setting_changed;
         api->add_setting(g_mod, &s_backfire);
+
+        FH2Setting s_refill{};
+        s_refill.size        = sizeof(s_refill);
+        s_refill.key         = "RefillOnRaceStart";
+        s_refill.label       = "Refill Nitro on Race Start";
+        s_refill.description = "Fills the nitro tank when a race starts, you quit one, you change car or you fast travel.";
+        s_refill.value       = g_refill_on_start.load() ? 1 : 0;
+        s_refill.on_change   = on_setting_changed;
+        api->add_setting(g_mod, &s_refill);
+
+        FH2Setting s_rewind{};
+        s_rewind.size        = sizeof(s_rewind);
+        s_rewind.key         = "RefundOnRewind";
+        s_rewind.label       = "Refund Nitro on Rewind";
+        s_rewind.description = "Rewinding gives back the nitro you used since the point you rewind to.";
+        s_rewind.value       = g_refund_on_rewind.load() ? 1 : 0;
+        s_rewind.on_change   = on_setting_changed;
+        api->add_setting(g_mod, &s_rewind);
 
         if (api->api_version >= 5) {
             // Sliders can only show numbers, so the button is picked by number (listed in the description).
