@@ -1321,7 +1321,7 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
     FH2ModInfo info{};
     info.size             = sizeof(info);
     info.name             = "NitroSystem";
-    info.version          = "1.2.0";
+    info.version          = "1.2.1";
     info.github_repo      = "qiangqiang101/NitroSystem";
     info.platform_version = FH2MOD_PLATFORM_VERSION;
     info.check_updates    = 1;
