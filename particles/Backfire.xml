@@ -1,61 +1,31 @@
 <Effect Version="15" budget="30" lowerbudget="20">
-
   <TimeOfDayData startH="0" startM="0" endH="24" endM="0" />
-
   <EmitterProperties type="SuperSpray">
-
     <OffAxis value="0" variation="0" />
-
     <OffPlane value="0" variation="0" />
-
     <Quantity value="6" var="0.5" />
-
     <Velocity value="0.70" variation="0.9" />
-
     <EmitTime start="0" end="0" infinite="0" />
-
     <DisplayUntil value="-1" />
-
     <Life value="0.45" variation="0.2" />
-
     <Density Version="3" value="0.000000" />
-
     <ParticleShaderType Version="3" value="_animated_rowonly" />
-
     <Animation rate="1.000000" numFramesX="1" numFramesY="1" />
-
     <RenderInMirror value="0" />
-
     <Size valueX="0.000000" valueY="0.000000" variationX="0.000000" variationY="0.000000" growforX="0.000000" growforY="0.050000" shrinkforX="0.000000" shrinkforY="0.000000" maxValueX="0.000000" maxValueY="0.000000" endValueX="0.000000" endValueY="0.000000" growFrom="0.000000" shrinkTo="0.000000" />
-
     <SpinTime value="0.000000" variation="0.000000" />
-
     <SpinPhase value="0.000000" variation="0.000000" />
-
     <SpinAxis type="Random" alternate="1" />
-
     <LockTo camera="0" />
-
     <SurfaceEffectId type="0" />
-
     <ActivateSound value="" />
-
   </EmitterProperties>
-
   <Behavior>
-
     <MotionInheritance influence="100" multiplier="0" offset="0" variation="1" />
-
     <Gravity strength="0" />
-
     <ParticleSpawn type="None" effect="" />
-
   </Behavior>
-
   <Render>
-
-    <ParticleType value="Material" Material="particles\Materials\Fire\carBackfire" GroundLightingMaterial="particles\Materials\fire\carBackfireGobo" zsort="1" IsDepthWriteEnabled="0" />
-
+    <ParticleType value="Material" Material="particles\Materials\backfire_blue" GroundLightingMaterial="particles\Materials\fire\carBackfireGobo" zsort="1" IsDepthWriteEnabled="0" />
   </Render>
-
 </Effect>
