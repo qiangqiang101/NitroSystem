@@ -19,7 +19,7 @@ Hold **LB** (or any button you pick) to burn nitro: your car gets a strong push,
 - **Only while driving.** Nitro only works while the game is simulating your car and the speedometer HUD is running, so it stays off in the pause menu, the map and loading screens. The tank doesn't drain or recharge while the game is paused. (Garage and car meet lobbies should also stay off, since the speedometer isn't active there.)
 - **NOS gauge on the speedometer.** Both the **analog** and the **digital** speedometers get a four-segment NOS bar that drains as you use nitro, with a glowing tip that follows the leading edge of the fill.
 - **Exhaust flames.** Blue flames come out of your car's real tailpipes while nitro is held (the mod drives the game's own backfire effect). Which tailpipes your car has is learned from the game's own backfires, so flames start after the first backfire of a drive or after you switch cars, which normally takes a few seconds.
-- **Sound and rumble.** A looping boost sound and a stop sound (`nos_boost.wav`, `nos_stop.wav`), and a rumble that ramps up with the boost.
+- **Sound and rumble.** A looping boost sound and a stop sound (built into the DLL; put your own `nos_boost.wav` and `nos_stop.wav` in an `FnFNitro` folder next to `azimuth.exe` to replace them), and a rumble that ramps up with the boost.
 - **In-game settings.** Everything below is on **Pause > Settings > MODS**.
 
 ### In-game settings
@@ -29,6 +29,7 @@ Hold **LB** (or any button you pick) to burn nitro: your car gets a strong push,
 | Nitro System | On / Off | On | Turns nitro on or off. |
 | Nitro Button | 1 - 16 | 1 (LB) | Which button burns nitro. The numbers are listed under the ini notes below. Applies right away. |
 | Nitro Debug Overlay | On / Off | Off | Draws debug info over the game (see below). |
+| HUD Theme | 1 - 2 | 2 | 1 is the original Forza Horizon 2 HUD with a yellow NOS bar. 2 is the Fast & Furious HUD: cyan NOS bar, cyan gears and cyan ABS / TCS / STM icons. **Needs a game restart.** |
 | Nitro Boost Multiplier | 1.0x - 2.0x | 1.6x | Strength of the push. |
 | Nitro Tank Capacity (sec) | 5 - 60 | 20 | Seconds of nitro in a full tank. |
 | Nitro Buildup Time (sec) | 0.1 - 2.0 | 0.5 | How long the push takes to ramp up. |
@@ -51,9 +52,12 @@ DebugOverlay=0
 BackfireOnAllCars=1
 RefillOnRaceStart=1
 RefundOnRewind=1
+HudTheme=FF
 ```
 
 A few notes on the file:
+
+- `HudTheme` is `FF` (Fast & Furious, the default) or `Original`. The Mods page shows it as a slider, 1 or 2. The mod writes the HUD files when it starts and when you change the slider, and the game reads them the next time it starts.
 
 - `NitroButton` picks which controller button burns nitro (default `LB`). An unknown value falls back to `LB`. The Mods page can only show numbers, so there the **Nitro Button** row is a slider from 1 to 16; in the ini you write the name:
 
@@ -80,8 +84,8 @@ Switch on **Nitro Debug Overlay** to draw a small panel in the top-left corner o
 ## Requirements
 
 - **Azimuth** launcher with Forza Horizon 2.
-- The **FH2 Mod Platform** (`d3dcompiler_47.dll` in the Azimuth folder; tested with platform 2.7.1). The other mods you may already have, such as ShowFPS or Achievements, use the same one.
-- **Forza Horizon 2 Extra Options.** The NOS speedometer gauge, the blue flame effect and the "every car can backfire" database change are all delivered through its `mediaoverride` folder. Without it the nitro push, sound and rumble still work, but those three won't apply.
+- The **FH2 Mod Platform** (`d3dcompiler_47.dll` in the Azimuth folder; tested with platform 2.7.3). The other mods you may already have, such as ShowFPS or Achievements, use the same one.
+- **Forza Horizon 2 Extra Options.** The NOS speedometer gauge and its HUD textures, the blue flame effect and the "every car can backfire" database change are all delivered through its `mediaoverride` folder. Without it the nitro push, sound and rumble still work, but those won't apply.
 
 ---
 
@@ -92,10 +96,12 @@ The paths below are examples. Use your own Azimuth folder and the game's `Mount`
 ### From a release (easiest)
 
 1. Download `FnFNitro-<version>.zip` from the **Releases** page and unzip it.
-2. Close the game. Copy the zip's **`azimuth-windows\`** folder into your Azimuth folder (the one with `azimuth.exe`), and its **`Mount\`** folder into the game's `Mount` folder. Say yes to merging.
+2. Close the game. Copy the zip's **`azimuth-windows\`** folder into your Azimuth folder (the one with `azimuth.exe`). Say yes to merging.
 3. Start the game through Azimuth.
 
-The zip contains the mod (`FnFNitro.dll`), the nitro sounds, the NOS speedometer gauge with its textures, the blue flame effect, the FH2 Mod Platform (`d3dcompiler_47.dll`, which loads mods; if you already have a newer one from another mod, keep yours), the licences, and an `INSTALL.txt` with these same steps.
+The zip contains the mod (`FnFNitro.dll`, with the HUD files, flame effect and nitro sounds inside it), the FH2 Mod Platform (`d3dcompiler_47.dll`, which loads mods; if you already have a newer one from another mod, keep yours), the licences, and an `INSTALL.txt` with these same steps.
+
+**Upgrading from 1.2 or older:** those versions had you copy the HUD textures and flame files into `Mount\mediaoverride`. They are inside the DLL now, so you don't need to copy `Mount\` any more. The first time the new version starts it deletes the old copies it recognises (only files that match the old release byte for byte, so anything you changed is left alone) and writes `Removed N old HUD/flame file(s)` to `platform.log`. Leftover `.bak` files next to them are the platform's backups of what was there before; you can delete those yourself.
 
 ### From the source tree
 
@@ -104,8 +110,6 @@ The `dist\` folder in this repository mirrors where each file goes:
 | From | To |
 |---|---|
 | `dist\fh2-mods\FnFNitro.dll` | `D:\Games\FH2\azimuth-windows\fh2-mods\` |
-| `dist\FnFNitro\` (the two `.wav` files) | `D:\Games\FH2\azimuth-windows\FnFNitro\` |
-| `dist\mediaoverride\` (everything inside) | `D:\Games\FH2\Anthem_1.0.0.64_x64__8wekyb3d8bbwe\Mount\mediaoverride\` |
 | `dist\d3dcompiler_47.dll` | `D:\Games\FH2\azimuth-windows\` (only if the platform isn't installed yet) |
 
 Start the game through Azimuth. Open `fh2-mods\platform.log` and look for lines like `loaded FnFNitro.dll`, and later `Player car located` and `Vertical axis learned`, which mean the mod found your car.
@@ -124,12 +128,14 @@ cmake -B build -A x64
 cmake --build build --config Release
 
 # Package into dist\ and copy everything into your Azimuth and game folders
-powershell -ExecutionPolicy Bypass -File scripts\package.ps1 -AzimuthDir "D:\Games\FH2\azimuth-windows" -GameMountDir "D:\Games\FH2\Anthem_1.0.0.64_x64__8wekyb3d8bbwe\Mount"
+powershell -ExecutionPolicy Bypass -File scripts\package.ps1 -AzimuthDir "D:\Games\FH2\azimuth-windows"
 ```
+
+The platform DLL (`dist\d3dcompiler_47.dll`) is not built here: the platform needs llvm-mingw, and recent versions don't compile with MSVC. It is the official build from the platform's [releases page](https://github.com/Trinculo54/fh2-mod-platform/releases) (`d3dcompiler_47.dll` inside `FH2-Mod-Platform-<version>.zip`). To update it, replace that file and move the `platform\` submodule to the same tag.
 
 ### Local deploy script
 
-`package.ps1` builds, fills `dist\`, and deploys the DLL, the sounds and the `mediaoverride` files. Both path parameters default to the author's folders (`D:\Games\FH2\...`), so pass your own unless yours match. If the game is running it can't overwrite the DLL, so close the game and run the script again.
+`package.ps1` builds, fills `dist\`, and deploys the DLL. The `-AzimuthDir` parameter defaults to the author's folder (`D:\Games\FH2\azimuth-windows`), so pass your own unless yours matches. If the game is running it can't overwrite the DLL, so close the game and run the script again.
 
 ---
 
@@ -145,17 +151,17 @@ Delete these from `azimuth-windows`:
 
 - `fh2-mods\FnFNitro.dll`
 - `fh2-mods\FnFNitro.ini` (your saved settings)
-- the whole `FnFNitro\` folder (the sounds)
+- the `FnFNitro\` folder, if you made one to use your own sounds
 
 ### 2. The HUD, flame and database overrides (game folder)
 
 Delete these from `Mount\mediaoverride`:
 
-- `UI\Controls\HUDSpeedometerControl.xaml` (the NOS speedometer gauge)
+- `UI\Controls\HUDSpeedometerControl.xaml` (the NOS speedometer gauge; the platform normally removes it for you when the mod is gone)
 - `UI\textures\Anthem\HUD\HUD_XPBar_TipGlow.swatchbin`, `SkillBarTipGlow.swatchbin` and `SkillsLargeGlow.swatchbin`
 - the folder `UI\textures\Anthem\HUD\Speedometer\`
 - the folder `UI\textures\data_bound\SpireHUD\` and the file `UI\textures\data_bound\SpireHUD.zip`
-- the folder `Particles\` (the blue flame effect)
+- `Particles\Systems\Backfire.xml` (the flame effect; the platform normally removes it for you when the mod is gone)
 - `stripped\gamedbRC.slt` (the "every car can backfire" database copy; the platform makes a new one on the next start only if a mod still needs it)
 
 ### 3. Or do it all with PowerShell
@@ -178,7 +184,7 @@ $targets = @(
   "$mo\UI\textures\Anthem\HUD\Speedometer",
   "$mo\UI\textures\data_bound\SpireHUD",
   "$mo\UI\textures\data_bound\SpireHUD.zip",
-  "$mo\Particles",
+  "$mo\Particles\Systems\Backfire.xml",
   "$mo\stripped\gamedbRC.slt"
 )
 foreach ($t in $targets) {

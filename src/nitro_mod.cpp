@@ -1,4 +1,5 @@
 #include "fh2mod.h"
+#include "legacy_files.h"
 
 #include <windows.h>
 #include <intrin.h>
@@ -11,6 +12,7 @@
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -25,6 +27,7 @@ static std::atomic<bool> g_debug{false};          // on-screen debug overlay (Mo
 static std::atomic<bool> g_backfire_all_cars{true};  // "Backfire on All Cars": applied to the database at startup (needs a restart)
 static std::atomic<bool> g_refund_on_rewind{true};   // "Refund Nitro on Rewind": a rewind gives back the nitro used since the point it returns to
 static std::atomic<bool> g_refill_on_start{true};    // "Refill Nitro on Race Start": full tank when the car is put somewhere else
+static std::atomic<int> g_hud_theme{1};              // "HUD Theme": 0 = Original (yellow NOS bar), 1 = Fast & Furious (cyan); needs a restart
 static std::atomic<float> g_torque_scale{1.6f};      // Spire default TorqueScale = 1.6
 static std::atomic<float> g_duration{20.0f};         // Spire default Duration = 20s
 static std::atomic<float> g_buildup_time{0.5f};      // Spire default BuildupTime = 0.5s
@@ -93,6 +96,10 @@ static void load_config() {
     g_refill_on_start.store(GetPrivateProfileIntW(L"Settings", L"RefillOnRaceStart", 1, g_ini_path) != 0);
     g_refund_on_rewind.store(GetPrivateProfileIntW(L"Settings", L"RefundOnRewind", 1, g_ini_path) != 0);
 
+    wchar_t theme[32];
+    GetPrivateProfileStringW(L"Settings", L"HudTheme", L"FF", theme, 32, g_ini_path);
+    g_hud_theme.store(_wcsicmp(theme, L"Original") == 0 ? 0 : 1);   // unknown values fall back to FF
+
     wchar_t buf[64];
     if (GetPrivateProfileStringW(L"Settings", L"TorqueScale", L"1.6", buf, 64, g_ini_path) > 0) {
         float val = wcstof(buf, nullptr);
@@ -127,6 +134,7 @@ static void save_config() {
     WritePrivateProfileStringW(L"Settings", L"BackfireOnAllCars", g_backfire_all_cars.load() ? L"1" : L"0", g_ini_path);
     WritePrivateProfileStringW(L"Settings", L"RefillOnRaceStart", g_refill_on_start.load() ? L"1" : L"0", g_ini_path);
     WritePrivateProfileStringW(L"Settings", L"RefundOnRewind", g_refund_on_rewind.load() ? L"1" : L"0", g_ini_path);
+    WritePrivateProfileStringW(L"Settings", L"HudTheme", g_hud_theme.load() == 0 ? L"Original" : L"FF", g_ini_path);
     swprintf_s(buf, 64, L"%.2f", g_torque_scale.load());
     WritePrivateProfileStringW(L"Settings", L"TorqueScale", buf, g_ini_path);
     swprintf_s(buf, 64, L"%.1f", g_duration.load());
@@ -135,6 +143,160 @@ static void save_config() {
     WritePrivateProfileStringW(L"Settings", L"BuildupTime", buf, g_ini_path);
     swprintf_s(buf, 64, L"%.2f", g_recharge_rate.load());
     WritePrivateProfileStringW(L"Settings", L"RechargeRate", buf, g_ini_path);
+}
+
+// HUD themes. The HUD files live in this DLL (src\hud.rc) and are written to mediaoverride through the platform.
+// The speedometer XAML and the NOS outlines are needed by both themes. The gears and the ABS/TCR/STM "on" icons
+// are Fast & Furious art, so with the Original theme they aren't replaced and the game reads its own.
+struct HudFile {
+    const char* resource;    // name in hud.rc
+    const char* media_path;  // relative to media
+    bool ff_only;
+};
+#define HUD_GEAR(n) {"HUD_Dial_Digital_Gear_" #n, "ui/textures/Anthem/HUD/Speedometer/HUD_Dial_Digital_Gear_" #n ".swatchbin", true}
+#define HUD_ICON(kind, what) {"HUD_Dial_Assist_" kind "_" what "_On", "ui/textures/data_bound/Anthem/HUD/HUD_Dial_Assist_" kind "_" what "_On.swatchbin", true}
+#define HUD_OUTLINE(name) {"HUD_Nos_Outline_" name "_Bar", "ui/textures/data_bound/SpireHUD/HUD_Nos_Outline_" name "_Bar.swatchbin", false}
+static const HudFile k_hud_xaml = {"HUDSpeedometerControl", "ui/Controls/HUDSpeedometerControl.xaml", false};
+static const HudFile k_hud_files[] = {
+    HUD_OUTLINE("Digital"), HUD_OUTLINE("Radial"),
+    HUD_GEAR(1), HUD_GEAR(2), HUD_GEAR(3), HUD_GEAR(4), HUD_GEAR(5), HUD_GEAR(6), HUD_GEAR(7), HUD_GEAR(8),
+    HUD_ICON("Analogue", "ABS"), HUD_ICON("Analogue", "TCR"), HUD_ICON("Analogue", "STM"),
+    HUD_ICON("Digital", "ABS"),  HUD_ICON("Digital", "TCR"),  HUD_ICON("Digital", "STM"),
+};
+
+// A file embedded in this DLL (src\hud.rc). The pointer stays valid for as long as the DLL is loaded.
+static const void* embedded_file(const char* name, DWORD* size) {
+    HMODULE self = nullptr;
+    if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                            reinterpret_cast<LPCWSTR>(&embedded_file), &self))
+        return nullptr;
+    HRSRC res = FindResourceA(self, name, MAKEINTRESOURCEA(10));   // 10 = RT_RCDATA
+    if (!res) return nullptr;
+    HGLOBAL mem = LoadResource(self, res);
+    const void* data = mem ? LockResource(mem) : nullptr;
+    if (data && size) *size = SizeofResource(self, res);
+    return data;
+}
+
+static bool load_hud_resource(const char* name, std::string& out) {
+    DWORD size = 0;
+    const void* data = embedded_file(name, &size);
+    if (!data) return false;
+    out.assign(static_cast<const char*>(data), size);
+    return true;
+}
+
+static void replace_all(std::string& s, const char* from, const char* to) {
+    const size_t n = strlen(from);
+    for (size_t pos = 0; (pos = s.find(from, pos)) != std::string::npos; pos += strlen(to)) s.replace(pos, n, to);
+}
+
+static void apply_hud_theme() {
+    if (!g_api || !g_mod || g_api->api_version < 2) return;
+    const bool ff = g_hud_theme.load() != 0;
+
+    std::string xaml;
+    if (!load_hud_resource(k_hud_xaml.resource, xaml)) {
+        g_api->log(g_mod, "HUD: the speedometer XAML is missing from the DLL.");
+        return;
+    }
+    if (!ff) {
+        // The XAML is written with the Fast & Furious cyan; Original turns the NOS bar yellow.
+        replace_all(xaml, "#FF2DB2FF", "#FFF4F444");   // fill: the yellow of the stock gear box
+        replace_all(xaml, "#2AEAFAFF", "#2AFFFFB0");   // tip glow
+        replace_all(xaml, "#22EAF8FF", "#22FFFFB0");   // tip glow, radial
+    }
+    if (!g_api->set_file(g_mod, k_hud_xaml.media_path, xaml.data(), xaml.size()))
+        g_api->log(g_mod, "HUD: couldn't replace the speedometer XAML (see platform.log).");
+
+    for (const auto& f : k_hud_files) {
+        if (f.ff_only && !ff) {
+            g_api->clear_file(g_mod, f.media_path);
+            continue;
+        }
+        std::string data;
+        if (!load_hud_resource(f.resource, data) || !g_api->set_file(g_mod, f.media_path, data.data(), data.size())) {
+            char msg[256];
+            snprintf(msg, sizeof(msg), "HUD: couldn't replace %s (see platform.log).", f.media_path);
+            g_api->log(g_mod, msg);
+        }
+    }
+    g_api->log(g_mod, ff ? "HUD theme: Fast & Furious" : "HUD theme: Original (yellow NOS bar)");
+}
+
+// Older versions had players copy these files into mediaoverride by hand. The platform doesn't know about them, so
+// it never removes them: stale cyan gears would show with the Original theme, and the old Spire flame shaders would
+// stay. A file is deleted only when it is byte-for-byte one we know (or our own embedded copy), so nothing a player
+// or another mod changed is touched.
+static uint64_t fnv1a(const void* data, size_t size) {
+    uint64_t h = 0xcbf29ce484222325ULL;
+    for (size_t i = 0; i < size; ++i) h = (h ^ static_cast<const unsigned char*>(data)[i]) * 0x100000001b3ULL;
+    return h;
+}
+
+static bool read_whole_file(const std::wstring& path, std::string& out) {
+    HANDLE f = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING,
+                           FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (f == INVALID_HANDLE_VALUE) return false;
+    LARGE_INTEGER size{};
+    bool ok = GetFileSizeEx(f, &size) && size.QuadPart < (64 << 20);
+    if (ok) {
+        out.resize(static_cast<size_t>(size.QuadPart));
+        DWORD got = 0;
+        ok = ReadFile(f, out.data(), static_cast<DWORD>(out.size()), &got, nullptr) && got == out.size();
+    }
+    CloseHandle(f);
+    return ok;
+}
+
+static std::wstring override_path(const wchar_t* relative) {
+    return std::wstring(g_api->game_dir) + L"\\mediaoverride\\" + relative;
+}
+
+// Delete `path` if its content is exactly `size` bytes with hash `hash`; then remove its folders if they're empty.
+static bool delete_if_known(const std::wstring& path, uint64_t size, uint64_t hash) {
+    std::string have;
+    if (!read_whole_file(path, have) || have.size() != size || fnv1a(have.data(), have.size()) != hash) return false;
+    SetFileAttributesW(path.c_str(), FILE_ATTRIBUTE_NORMAL);
+    if (!DeleteFileW(path.c_str())) return false;
+    const std::wstring root = std::wstring(g_api->game_dir) + L"\\mediaoverride";
+    for (std::wstring dir = path.substr(0, path.find_last_of(L'\\'));
+         dir.size() > root.size() && RemoveDirectoryW(dir.c_str()); dir = dir.substr(0, dir.find_last_of(L'\\'))) {
+    }
+    return true;
+}
+
+static void remove_legacy_files() {
+    if (!g_api || !g_mod || !g_api->game_dir || !g_api->game_dir[0]) return;
+    int removed = 0;
+    for (const auto& f : k_legacy_files)
+        if (delete_if_known(override_path(f.path), f.size, f.hash)) ++removed;
+    // The Fast & Furious gears and icons, left behind by hand-copying or by an older version, when the theme is Original.
+    if (g_hud_theme.load() == 0) {
+        for (const auto& f : k_hud_files) {
+            if (!f.ff_only) continue;
+            std::string wanted;
+            std::wstring rel(f.media_path, f.media_path + strlen(f.media_path));
+            for (auto& c : rel) if (c == L'/') c = L'\\';
+            if (load_hud_resource(f.resource, wanted) &&
+                delete_if_known(override_path(rel.c_str()), wanted.size(), fnv1a(wanted.data(), wanted.size())))
+                ++removed;
+        }
+    }
+    if (removed) {
+        char msg[96];
+        snprintf(msg, sizeof(msg), "Removed %d old HUD/flame file(s) from mediaoverride (now built into the mod).", removed);
+        g_api->log(g_mod, msg);
+    }
+}
+
+// The exhaust flame: the game's own Backfire effect with more and longer-lived particles, drawn with its stock
+// blue backfire material. Both themes use it.
+static void apply_backfire_effect() {
+    if (!g_api || !g_mod || g_api->api_version < 2) return;
+    std::string xml;
+    if (!load_hud_resource("Backfire", xml) || !g_api->set_file(g_mod, "Particles/Systems/Backfire.xml", xml.data(), xml.size()))
+        g_api->log(g_mod, "Couldn't replace the backfire effect (see platform.log); the exhaust flames will look stock.");
 }
 
 // Physics Hook: CCarDynamics::UpdateDynamics (RVA 0x12C1EA0 in Anthem)
@@ -790,6 +952,12 @@ static void on_slider_changed(void* user, const char* key, float value) {
         save_config();
         snprintf(buf, sizeof(buf), "NitroButton set to %ls (saved)", k_buttons[idx].name);
         if (g_api && g_mod) g_api->log(g_mod, buf);
+    } else if (strcmp(key, "HudTheme") == 0) {
+        g_hud_theme.store((int)(value + 0.5f) >= 2 ? 1 : 0);
+        save_config();
+        apply_hud_theme();   // the files are written now; the game picks them up when it restarts
+        snprintf(buf, sizeof(buf), "HudTheme set to %s (saved, applies after a restart)", g_hud_theme.load() ? "Fast & Furious" : "Original");
+        if (g_api && g_mod) g_api->log(g_mod, buf);
     } else if (strcmp(key, "TorqueScale") == 0) {
         g_torque_scale.store(value);
         save_config();
@@ -824,17 +992,23 @@ static void set_rumble(WORD left_motor, WORD right_motor) {
 }
 
 // Audio Control
-static void start_nitro_audio() {
-    if (g_sound_boost_path[0] != L'\0') {
-        PlaySoundW(g_sound_boost_path, NULL, SND_ASYNC | SND_FILENAME | SND_LOOP | SND_NODEFAULT);
+// The sounds are embedded in the DLL. A nos_boost.wav / nos_stop.wav in the FnFNitro folder next to azimuth.exe
+// replaces them, for players who want their own.
+static void play_nitro_sound(const wchar_t* custom_path, const char* embedded_name, DWORD flags) {
+    if (custom_path[0] != L'\0' && GetFileAttributesW(custom_path) != INVALID_FILE_ATTRIBUTES) {
+        PlaySoundW(custom_path, NULL, flags | SND_FILENAME | SND_NODEFAULT);
+    } else if (const void* wav = embedded_file(embedded_name, nullptr)) {
+        PlaySoundW(reinterpret_cast<LPCWSTR>(wav), NULL, flags | SND_MEMORY | SND_NODEFAULT);
     }
+}
+
+static void start_nitro_audio() {
+    play_nitro_sound(g_sound_boost_path, "nos_boost", SND_ASYNC | SND_LOOP);
 }
 
 static void stop_nitro_audio() {
     PlaySoundW(NULL, NULL, 0);
-    if (g_sound_stop_path[0] != L'\0') {
-        PlaySoundW(g_sound_stop_path, NULL, SND_ASYNC | SND_FILENAME | SND_NODEFAULT);
-    }
+    play_nitro_sound(g_sound_stop_path, "nos_stop", SND_ASYNC);
 }
 
 // Fill the tank. One cooldown for every trigger below, since a single transition can set off several.
@@ -1321,7 +1495,7 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
     FH2ModInfo info{};
     info.size             = sizeof(info);
     info.name             = "NitroSystem";
-    info.version          = "1.2.1";
+    info.version          = "1.3.0";
     info.github_repo      = "qiangqiang101/NitroSystem";
     info.platform_version = FH2MOD_PLATFORM_VERSION;
     info.check_updates    = 1;
@@ -1335,6 +1509,9 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
     // Initialize paths & load persistent settings from FnFNitro.ini
     init_paths();
     load_config();
+    apply_hud_theme();   // before the game first reads the HUD files
+    apply_backfire_effect();
+    remove_legacy_files();
 
     // Register In-Game Settings (Pause > Settings > MODS) with loaded values
     if (api->api_version >= 4) {
@@ -1402,6 +1579,22 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
             s_button.decimals      = 0;
             s_button.on_slide      = on_slider_changed;
             api->add_setting(g_mod, &s_button);
+
+            FH2Setting s_hud{};
+            s_hud.size          = sizeof(s_hud);
+            s_hud.key           = "HudTheme";
+            s_hud.label         = "HUD Theme";
+            s_hud.description   = "1 Original (yellow NOS bar), 2 Fast & Furious (cyan NOS bar, gears and assist icons).";
+            s_hud.kind          = FH2_SETTING_SLIDER;
+            s_hud.min           = 1.0f;
+            s_hud.max           = 2.0f;
+            s_hud.step          = 1.0f;
+            s_hud.slider_value  = g_hud_theme.load() ? 2.0f : 1.0f;
+            s_hud.display_scale = 1.0f;
+            s_hud.decimals      = 0;
+            s_hud.needs_restart = 1;
+            s_hud.on_slide      = on_slider_changed;
+            api->add_setting(g_mod, &s_hud);
 
             FH2Setting s_torque{};
             s_torque.size          = sizeof(s_torque);

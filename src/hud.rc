@@ -1,0 +1,25 @@
+// Files embedded in the DLL: the HUD, the flame effect and the nitro sounds. The HUD and flame files are written to mediaoverride by the code in nitro_mod.cpp.
+// Paths are relative to this file.
+
+HUDSpeedometerControl RCDATA "../hud/HUDSpeedometerControl.xaml"
+HUD_Nos_Outline_Digital_Bar RCDATA "../hud/shared/HUD_Nos_Outline_Digital_Bar.swatchbin"
+HUD_Nos_Outline_Radial_Bar RCDATA "../hud/shared/HUD_Nos_Outline_Radial_Bar.swatchbin"
+HUD_Dial_Assist_Analogue_ABS_On RCDATA "../hud/ff/HUD_Dial_Assist_Analogue_ABS_On.swatchbin"
+HUD_Dial_Assist_Analogue_STM_On RCDATA "../hud/ff/HUD_Dial_Assist_Analogue_STM_On.swatchbin"
+HUD_Dial_Assist_Analogue_TCR_On RCDATA "../hud/ff/HUD_Dial_Assist_Analogue_TCR_On.swatchbin"
+HUD_Dial_Assist_Digital_ABS_On RCDATA "../hud/ff/HUD_Dial_Assist_Digital_ABS_On.swatchbin"
+HUD_Dial_Assist_Digital_STM_On RCDATA "../hud/ff/HUD_Dial_Assist_Digital_STM_On.swatchbin"
+HUD_Dial_Assist_Digital_TCR_On RCDATA "../hud/ff/HUD_Dial_Assist_Digital_TCR_On.swatchbin"
+HUD_Dial_Digital_Gear_1 RCDATA "../hud/ff/HUD_Dial_Digital_Gear_1.swatchbin"
+HUD_Dial_Digital_Gear_2 RCDATA "../hud/ff/HUD_Dial_Digital_Gear_2.swatchbin"
+HUD_Dial_Digital_Gear_3 RCDATA "../hud/ff/HUD_Dial_Digital_Gear_3.swatchbin"
+HUD_Dial_Digital_Gear_4 RCDATA "../hud/ff/HUD_Dial_Digital_Gear_4.swatchbin"
+HUD_Dial_Digital_Gear_5 RCDATA "../hud/ff/HUD_Dial_Digital_Gear_5.swatchbin"
+HUD_Dial_Digital_Gear_6 RCDATA "../hud/ff/HUD_Dial_Digital_Gear_6.swatchbin"
+HUD_Dial_Digital_Gear_7 RCDATA "../hud/ff/HUD_Dial_Digital_Gear_7.swatchbin"
+HUD_Dial_Digital_Gear_8 RCDATA "../hud/ff/HUD_Dial_Digital_Gear_8.swatchbin"
+
+Backfire RCDATA "../particles/Backfire.xml"
+
+nos_boost RCDATA "../sounds/nos_boost.wav"
+nos_stop RCDATA "../sounds/nos_stop.wav"
