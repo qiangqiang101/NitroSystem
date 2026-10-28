@@ -84,7 +84,7 @@ Switch on **Nitro Debug Overlay** to draw a small panel in the top-left corner o
 ## Requirements
 
 - **Azimuth** launcher with Forza Horizon 2.
-- The **FH2 Mod Platform** (`d3dcompiler_47.dll` in the Azimuth folder; tested with platform 2.7.3). The other mods you may already have, such as ShowFPS or Achievements, use the same one.
+- The **FH2 Mod Platform** (`DWrite.dll` in the Azimuth folder; tested with platform 2.7.4). The other mods you may already have, such as ShowFPS or Achievements, use the same one.
 - **Forza Horizon 2 Extra Options.** The NOS speedometer gauge and its HUD textures, the blue flame effect and the "every car can backfire" database change are all delivered through its `mediaoverride` folder. Without it the nitro push, sound and rumble still work, but those won't apply.
 
 ---
@@ -99,7 +99,7 @@ The paths below are examples. Use your own Azimuth folder and the game's `Mount`
 2. Close the game. Copy the zip's **`azimuth-windows\`** folder into your Azimuth folder (the one with `azimuth.exe`). Say yes to merging.
 3. Start the game through Azimuth.
 
-The zip contains the mod (`FnFNitro.dll`, with the HUD files, flame effect and nitro sounds inside it), the FH2 Mod Platform (`d3dcompiler_47.dll`, which loads mods; if you already have a newer one from another mod, keep yours), the licences, and an `INSTALL.txt` with these same steps.
+The zip contains the mod (`FnFNitro.dll`, with the HUD files, flame effect and nitro sounds inside it), the FH2 Mod Platform (`DWrite.dll`, which loads mods; if you already have a newer one from another mod, keep yours), the licences, and an `INSTALL.txt` with these same steps.
 
 **Upgrading from 1.2 or older:** those versions had you copy the HUD textures and flame files into `Mount\mediaoverride`. They are inside the DLL now, so you don't need to copy `Mount\` any more. The first time the new version starts it deletes the old copies it recognises (only files that match the old release byte for byte, so anything you changed is left alone) and writes `Removed N old HUD/flame file(s)` to `platform.log`. Leftover `.bak` files next to them are the platform's backups of what was there before; you can delete those yourself.
 
@@ -110,7 +110,7 @@ The `dist\` folder in this repository mirrors where each file goes:
 | From | To |
 |---|---|
 | `dist\fh2-mods\FnFNitro.dll` | `D:\Games\FH2\azimuth-windows\fh2-mods\` |
-| `dist\d3dcompiler_47.dll` | `D:\Games\FH2\azimuth-windows\` (only if the platform isn't installed yet) |
+| `DWrite.dll` from the platform's [releases page](https://github.com/Trinculo54/fh2-mod-platform/releases) | `D:\Games\FH2\azimuth-windows\` (only if the platform isn't installed yet) |
 
 Start the game through Azimuth. Open `fh2-mods\platform.log` and look for lines like `loaded FnFNitro.dll`, and later `Player car located` and `Vertical axis learned`, which mean the mod found your car.
 
@@ -131,7 +131,7 @@ cmake --build build --config Release
 powershell -ExecutionPolicy Bypass -File scripts\package.ps1 -AzimuthDir "D:\Games\FH2\azimuth-windows"
 ```
 
-The platform DLL (`dist\d3dcompiler_47.dll`) is not built here: the platform needs llvm-mingw, and recent versions don't compile with MSVC. It is the official build from the platform's [releases page](https://github.com/Trinculo54/fh2-mod-platform/releases) (`d3dcompiler_47.dll` inside `FH2-Mod-Platform-<version>.zip`). To update it, replace that file and move the `platform\` submodule to the same tag.
+The platform DLL is not built with MSVC: the platform needs llvm-mingw. The release workflow cross-compiles it from the `platform\` submodule and ships it as `DWrite.dll` (the name Azimuth 1.0.1 and later load). To update it, move the submodule to the new tag.
 
 ### Local deploy script
 
@@ -141,7 +141,7 @@ The platform DLL (`dist\d3dcompiler_47.dll`) is not built here: the platform nee
 
 ## Uninstalling
 
-Close the game first. Everything the mod added is in three places, and **nothing else should be removed**: the Mods page screens, string tables, car zips and `DefaultCache.bin` in `mediaoverride` belong to the FH2 Mod Platform and your other mods, and `d3dcompiler_47.dll` is the platform itself.
+Close the game first. Everything the mod added is in three places, and **nothing else should be removed**: the Mods page screens, string tables, car zips and `DefaultCache.bin` in `mediaoverride` belong to the FH2 Mod Platform and your other mods, and `DWrite.dll` is the platform itself.
 
 **To switch the mod off without uninstalling it,** open **Pause > Settings > MODS** and turn **Nitro System** off (or set `NitroEnabled=0` in the ini).
 

@@ -1489,13 +1489,22 @@ static void debug_overlay_thread() {
     }
 }
 
+// The tank as 0-100. Exported so other mods in the process (VirtualDashboard) can read it.
+static int nitro_percent() {
+    float duration = g_duration.load();
+    float pct = (duration > 0.001f) ? g_current_fuel.load() / duration * 100.0f : 0.0f;
+    return static_cast<int>(std::lround((std::min)(100.0f, (std::max)(0.0f, pct))));
+}
+
+extern "C" __declspec(dllexport) int FnFNitro_GetNitroPercent() { return nitro_percent(); }
+
 FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
     g_api = api;
 
     FH2ModInfo info{};
     info.size             = sizeof(info);
     info.name             = "NitroSystem";
-    info.version          = "1.3.0";
+    info.version          = "1.3.1";
     info.github_repo      = "qiangqiang101/NitroSystem";
     info.platform_version = FH2MOD_PLATFORM_VERSION;
     info.check_updates    = 1;

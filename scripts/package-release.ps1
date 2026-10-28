@@ -5,6 +5,7 @@
 # Run it after:  cmake -B build -A x64 ; cmake --build build --config Release
 param(
     [Parameter(Mandatory = $true)] [string]$Tag,
+    [string]$PlatformDll = "dist\DWrite.dll",
     [string]$BuildDir = "build",
     [string]$OutDir = "release"
 )
@@ -16,7 +17,7 @@ $root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 Set-Location $root
 
 $dll         = Join-Path $BuildDir "Release\FnFNitro.dll"
-$platformDll = "dist\d3dcompiler_47.dll"   # the platform's official release build; it isn't built here
+$platformDll = $PlatformDll   # the platform's DWrite.dll, built by the workflow (it needs llvm-mingw, so not here)
 
 # Everything the zip needs must exist, or the release fails loudly instead of shipping a broken zip
 $required = @($dll, $platformDll, "README.md", "platform\LICENSE", "platform\third_party\minhook\LICENSE.txt")
@@ -37,12 +38,12 @@ New-Item -ItemType Directory -Force -Path $stage | Out-Null
 $az = Join-Path $stage "azimuth-windows"
 New-Item -ItemType Directory -Force -Path (Join-Path $az "fh2-mods") | Out-Null
 Copy-Item $dll         (Join-Path $az "fh2-mods\FnFNitro.dll")
-Copy-Item $platformDll (Join-Path $az "d3dcompiler_47.dll")
+Copy-Item $platformDll (Join-Path $az "DWrite.dll")
 
 # The HUD, the flame effect and the database change are all inside FnFNitro.dll; the platform writes them to
 # the game's mediaoverride folder itself, so the zip has no Mount folder.
 
-# --- Licences (the platform asks for LICENSE-MinHook.txt to travel with d3dcompiler_47.dll) and docs
+# --- Licences (the platform asks for LICENSE-MinHook.txt to travel with DWrite.dll) and docs
 $lic = Join-Path $stage "licenses"
 New-Item -ItemType Directory -Force -Path $lic | Out-Null
 Copy-Item "platform\LICENSE"                          (Join-Path $lic "LICENSE-FH2-Mod-Platform.txt")
@@ -58,7 +59,7 @@ Close the game first, then copy the azimuth-windows\ folder from this zip into y
 
 What is in azimuth-windows\:
   fh2-mods\FnFNitro.dll    the mod
-  d3dcompiler_47.dll       the FH2 Mod Platform that loads mods. If you already have a platform
+  DWrite.dll               the FH2 Mod Platform that loads mods. If you already have a platform
                            from another mod, keep the newer one: skip this file if yours is newer.
 
 The NOS speedometer gauge, the HUD textures and the blue flame effect are inside FnFNitro.dll. The platform

@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.20)
-project(FnFNitroInFH2 VERSION 1.3.0 LANGUAGES C CXX RC)
+project(FnFNitroInFH2 VERSION 1.3.1 LANGUAGES C CXX RC)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Add the platform submodule for its header (fh2mod_api). The platform DLL itself is not built here: it needs llvm-mingw,
-# so dist/d3dcompiler_47.dll is the official release build (see README)
+# so the release workflow builds it separately and ships DWrite.dll (see README)
 add_subdirectory(platform EXCLUDE_FROM_ALL)
 
 add_library(FnFNitro SHARED

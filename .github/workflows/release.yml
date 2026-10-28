@@ -17,16 +17,55 @@ permissions:
   contents: write   # to attach the zip to a release
 
 jobs:
+  # The platform needs llvm-mingw, so it is cross-compiled on Linux (the same way its own workflow does)
+  # and produces DWrite.dll, the name Azimuth 1.0.1 and later load. d3dcompiler_47.dll is not shipped.
+  platform:
+    runs-on: ubuntu-24.04
+    env:
+      LLVM_MINGW_VERSION: "20260922"
+    steps:
+      - name: Check out (with the platform submodule)
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Install llvm-mingw + ninja
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends ninja-build
+          curl -fsSL "https://github.com/mstorsjo/llvm-mingw/releases/download/${LLVM_MINGW_VERSION}/llvm-mingw-${LLVM_MINGW_VERSION}-ucrt-ubuntu-22.04-x86_64.tar.xz" -o llvm-mingw.tar.xz
+          sudo mkdir -p /opt/llvm-mingw
+          sudo tar -xJf llvm-mingw.tar.xz -C /opt/llvm-mingw --strip-components=1
+
+      - name: Build the platform
+        env:
+          CMAKE_GENERATOR: Ninja
+        run: ./platform/scripts/build.sh
+
+      - name: Keep DWrite.dll for the release build
+        uses: actions/upload-artifact@v4
+        with:
+          name: platform-dwrite
+          path: platform/dist/DWrite.dll
+          if-no-files-found: error
+
   build:
+    needs: platform
     runs-on: windows-latest
     env:
       # the release's tag, or the label typed into a manual run
       RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag || 'manual-test' }}
     steps:
       - name: Check out (with the platform submodule)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
+
+      - name: Get the platform's DWrite.dll
+        uses: actions/download-artifact@v5
+        with:
+          name: platform-dwrite
+          path: platform-dist
 
       - name: Configure
         run: cmake -B build -A x64
@@ -36,7 +75,7 @@ jobs:
 
       - name: Package
         shell: pwsh
-        run: ./scripts/package-release.ps1 -Tag $env:RELEASE_TAG
+        run: ./scripts/package-release.ps1 -Tag $env:RELEASE_TAG -PlatformDll platform-dist/DWrite.dll
 
       - name: Attach the zip to the release
         if: github.event_name == 'release'
