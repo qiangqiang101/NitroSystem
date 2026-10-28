@@ -2,7 +2,7 @@
 
 Fast & Furious style **nitro** for **Forza Horizon 2** (Xbox One build on PC via the Azimuth launcher), built on the **FH2 Mod Platform**.
 
-Hold **LB** (or any button you pick) to burn nitro: your car gets a strong push, blue flames shoot from your tailpipes, the speedometer gets a draining NOS gauge with a glowing tip, and the controller rumbles.
+Hold **LB** (or any button you pick) to burn nitro: your car gets a strong push, blue flames shoot from your tailpipes, the speedometer gets a draining NOS gauge with a glowing tip, the nitro roars, the camera shakes and the controller rumbles.
 
 [<img width="1536" height="864" alt="image" src="https://github.com/user-attachments/assets/ce6448ca-6403-46ca-b6ec-baeee1115d85" />](https://www.youtube.com/watch?v=T0PnPXlaUCg)
 
@@ -19,7 +19,7 @@ Hold **LB** (or any button you pick) to burn nitro: your car gets a strong push,
 - **Only while driving.** Nitro only works while the game is simulating your car and the speedometer HUD is running, so it stays off in the pause menu, the map and loading screens. The tank doesn't drain or recharge while the game is paused. (Garage and car meet lobbies should also stay off, since the speedometer isn't active there.)
 - **NOS gauge on the speedometer.** Both the **analog** and the **digital** speedometers get a four-segment NOS bar that drains as you use nitro, with a glowing tip that follows the leading edge of the fill.
 - **Exhaust flames.** Blue flames come out of your car's real tailpipes while nitro is held (the mod drives the game's own backfire effect). Which tailpipes your car has is learned from the game's own backfires, so flames start after the first backfire of a drive or after you switch cars, which normally takes a few seconds.
-- **Sound and rumble.** A looping boost sound and a stop sound (built into the DLL; put your own `nos_boost.wav` and `nos_stop.wav` in an `FnFNitro` folder next to `azimuth.exe` to replace them), and a rumble that ramps up with the boost.
+- **Sound, rumble and camera shake.** A boost sound that kicks in and then holds for as long as the tank lasts, and a stop sound (built into the DLL; put your own `nos_boost.wav` and `nos_stop.wav` in an `FnFNitro` folder next to `azimuth.exe` to replace them; your own boost sound loops from its start), a rumble that ramps up with the boost, and a camera shake while it burns. Each has its own setting below.
 - **In-game settings.** Everything below is on **Pause > Settings > MODS**.
 
 ### In-game settings
@@ -34,9 +34,12 @@ Hold **LB** (or any button you pick) to burn nitro: your car gets a strong push,
 | Nitro Tank Capacity (sec) | 5 - 60 | 20 | Seconds of nitro in a full tank. |
 | Nitro Buildup Time (sec) | 0.1 - 2.0 | 0.5 | How long the push takes to ramp up. |
 | Nitro Recharge Rate | 0.0 - 1.0 | 0.2 | Seconds of nitro restored per second while not boosting. |
+| Nitro Sound Volume | 0 - 100 | 50 | Volume of the boost and stop sounds. The game's own volume sliders don't change them. Applies from the next boost. |
+| Nitro Camera Shake | 0 - 100 | 65 | How much the camera shakes while nitro burns, in the driver, hood, bumper and chase views. 0 turns it off. Applies right away. |
 | Backfire on All Cars | On / Off | On | Lets every car backfire, which the exhaust flames need (see below). **Needs a game restart.** |
 | Refill Nitro on Race Start | On / Off | On | Fills the tank when a race starts, you quit one, you change car or you fast travel. Applies right away. |
 | Refund Nitro on Rewind | On / Off | On | Rewinding gives back the nitro you used since the point you rewind to. Applies right away. |
+| Nitro Controller Rumble | On / Off | On | Rumbles the controller while nitro burns. The game's own rumble isn't affected. Applies right away. |
 
 Settings are saved to `fh2-mods\FnFNitro.ini`:
 
@@ -48,10 +51,13 @@ TorqueScale=1.60
 Duration=20.0
 BuildupTime=0.50
 RechargeRate=0.20
+SoundVolume=0.50
+CameraShake=0.65
 DebugOverlay=0
 BackfireOnAllCars=1
 RefillOnRaceStart=1
 RefundOnRewind=1
+Rumble=1
 HudTheme=FF
 ```
 
@@ -85,7 +91,7 @@ Switch on **Nitro Debug Overlay** to draw a small panel in the top-left corner o
 
 - **Azimuth** launcher with Forza Horizon 2.
 - The **FH2 Mod Platform** (`DWrite.dll` in the Azimuth folder; tested with platform 2.7.4). The other mods you may already have, such as ShowFPS or Achievements, use the same one.
-- **Forza Horizon 2 Extra Options.** The NOS speedometer gauge and its HUD textures, the blue flame effect and the "every car can backfire" database change are all delivered through its `mediaoverride` folder. Without it the nitro push, sound and rumble still work, but those won't apply.
+- **Forza Horizon 2 Extra Options.** The NOS speedometer gauge and its HUD textures, the blue flame effect and the "every car can backfire" database change are all delivered through its `mediaoverride` folder. Without it the nitro push, sound, camera shake and rumble still work, but those won't apply.
 
 ---
 
@@ -100,6 +106,9 @@ The paths below are examples. Use your own Azimuth folder and the game's `Mount`
 3. Start the game through Azimuth.
 
 The zip contains the mod (`FnFNitro.dll`, with the HUD files, flame effect and nitro sounds inside it), the FH2 Mod Platform (`DWrite.dll`, which loads mods; if you already have a newer one from another mod, keep yours), the licences, and an `INSTALL.txt` with these same steps.
+
+> [!IMPORTANT]
+> `FnFNitro.dll` goes in **`fh2-mods`**, the FH2 Mod Platform's folder. It is **not** an Extra Options mod: don't put it in Extra Options' `mods` folder, where it won't be loaded. If `fh2-mods` doesn't exist yet, the zip creates it.
 
 **Upgrading from 1.2 or older:** those versions had you copy the HUD textures and flame files into `Mount\mediaoverride`. They are inside the DLL now, so you don't need to copy `Mount\` any more. The first time the new version starts it deletes the old copies it recognises (only files that match the old release byte for byte, so anything you changed is left alone) and writes `Removed N old HUD/flame file(s)` to `platform.log`. Leftover `.bak` files next to them are the platform's backups of what was there before; you can delete those yourself.
 
@@ -141,11 +150,11 @@ The platform DLL is not built with MSVC: the platform needs llvm-mingw. The rele
 
 ## Uninstalling
 
-Close the game first. Everything the mod added is in three places, and **nothing else should be removed**: the Mods page screens, string tables, car zips and `DefaultCache.bin` in `mediaoverride` belong to the FH2 Mod Platform and your other mods, and `DWrite.dll` is the platform itself.
+Close the game first. **Don't remove anything else** from `mediaoverride`: the Mods page screens, string tables, car zips and `DefaultCache.bin` there belong to the FH2 Mod Platform and your other mods, and `DWrite.dll` is the platform itself.
 
 **To switch the mod off without uninstalling it,** open **Pause > Settings > MODS** and turn **Nitro System** off (or set `NitroEnabled=0` in the ini).
 
-### 1. The mod and its files (Azimuth folder)
+### 1. Delete the mod (Azimuth folder)
 
 Delete these from `azimuth-windows`:
 
@@ -153,56 +162,41 @@ Delete these from `azimuth-windows`:
 - `fh2-mods\FnFNitro.ini` (your saved settings)
 - the `FnFNitro\` folder, if you made one to use your own sounds
 
-### 2. The HUD, flame and database overrides (game folder)
+### 2. Start the game once
 
-Delete these from `Mount\mediaoverride`:
+Launch the game through Azimuth. The mod's HUD, flame and database files in `Mount\mediaoverride` are handed out by the FH2 Mod Platform, and it deletes them shortly after startup once no installed mod uses them: the NOS speedometer (`UI\Controls\HUDSpeedometerControl.xaml` and the textures under `UI\textures\Anthem\HUD\Speedometer\`, `UI\textures\data_bound\Anthem\HUD\` and `UI\textures\data_bound\SpireHUD\`), the flame effect (`Particles\Systems\Backfire.xml`) and the "every car can backfire" database copy (`stripped\gamedbRC.slt`, which is only made again if another mod still changes the database). The speedometer, flames and car backfires are then back to stock. Open `fh2-mods\platform.log`: there should be no `[NitroSystem]` lines.
 
-- `UI\Controls\HUDSpeedometerControl.xaml` (the NOS speedometer gauge; the platform normally removes it for you when the mod is gone)
-- `UI\textures\Anthem\HUD\HUD_XPBar_TipGlow.swatchbin`, `SkillBarTipGlow.swatchbin` and `SkillsLargeGlow.swatchbin`
-- the folder `UI\textures\Anthem\HUD\Speedometer\`
-- the folder `UI\textures\data_bound\SpireHUD\` and the file `UI\textures\data_bound\SpireHUD.zip`
-- `Particles\Systems\Backfire.xml` (the flame effect; the platform normally removes it for you when the mod is gone)
-- `stripped\gamedbRC.slt` (the "every car can backfire" database copy; the platform makes a new one on the next start only if a mod still needs it)
+### 3. Only if you installed 1.2 or older by hand
 
-### 3. Or do it all with PowerShell
-
-Edit the first two lines to match your install. Add `-WhatIf` to each `Remove-Item` first to see what would be deleted without deleting anything.
+Those versions had you copy files into `Mount\mediaoverride` yourself. 1.3 and later delete the copies they recognise when they start, so this only matters if you never ran a newer version. Delete these if they're still there (add `-WhatIf` to see what would go without deleting anything):
 
 ```powershell
-$Azimuth = "D:\Games\FH2\azimuth-windows"
-$Mount   = "D:\Games\FH2\Anthem_1.0.0.64_x64__8wekyb3d8bbwe\Mount"
-$mo      = Join-Path $Mount "mediaoverride"
+$mo = "D:\Games\FH2\Anthem_1.0.0.64_x64__8wekyb3d8bbwe\Mount\mediaoverride"
 
 $targets = @(
-  "$Azimuth\fh2-mods\FnFNitro.dll",
-  "$Azimuth\fh2-mods\FnFNitro.ini",
-  "$Azimuth\FnFNitro",
-  "$mo\UI\Controls\HUDSpeedometerControl.xaml",
   "$mo\UI\textures\Anthem\HUD\HUD_XPBar_TipGlow.swatchbin",
   "$mo\UI\textures\Anthem\HUD\SkillBarTipGlow.swatchbin",
   "$mo\UI\textures\Anthem\HUD\SkillsLargeGlow.swatchbin",
   "$mo\UI\textures\Anthem\HUD\Speedometer",
   "$mo\UI\textures\data_bound\SpireHUD",
   "$mo\UI\textures\data_bound\SpireHUD.zip",
-  "$mo\Particles\Systems\Backfire.xml",
-  "$mo\stripped\gamedbRC.slt"
+  "$mo\Particles\Materials\backfire.materialbin",
+  "$mo\Particles\Materials\backfire_blue.materialbin",
+  "$mo\Particles\Materials\backfire_purple.materialbin",
+  "$mo\Particles\Materials\Fire\backfire_blue.materialbin",
+  "$mo\Particles\Materials\Fire\carBackfire.materialbin",
+  "$mo\Particles\Shaders\backfire"
 )
 foreach ($t in $targets) {
   if (Test-Path $t) { Remove-Item $t -Recurse -Force } else { "Not found (already gone): $t" }
 }
 ```
 
-### 4. Start the game once
-
-Launch the game through Azimuth. The platform tidies up the files it manages, and the speedometer, flames and car backfire behaviour are back to stock. Open `fh2-mods\platform.log`: there should be no `FnFNitro` lines.
-
 ---
 
 ## Known limitations
 
-- **Flames at very high speed.** Above about 250 km/h the flames can look thin or vanish when the camera is directly behind the car, and look right from the side. This is the game's particle effect stretching with speed, not something the mod can change.
 - **Flames need a first backfire.** After you start driving or switch cars, there are no nitro flames until the game has fired one of its own backfires for that car.
-- **No motion blur.** An attempt to add nitro motion blur didn't work with this game build and was removed.
 - **No nitro package in the upgrade shop.** The game's upgrade system has no slot for it.
 
 ---
@@ -211,8 +205,9 @@ Launch the game through Azimuth. The platform tidies up the files it manages, an
 
 Everything the mod says goes to `fh2-mods\platform.log` (starts fresh every launch). Useful lines:
 
-- `loaded FnFNitro.dll`, plus a line for each hook it installed: the mod is running.
+- `loaded FnFNitro.dll`, then `[NitroSystem]` lines for each hook it installed: the mod is running.
 - `Player car located` and `Vertical axis learned: Y`: the mod found your car and which way is up. This takes a few seconds of driving after the game loads. Until it has found your car, the mod can't tell your car from AI cars and may push every simulated car, so give it a few seconds before you use nitro next to other cars.
+- `Camera view matrices hooked`: the camera shake is in place.
 - `Failed to ...` or `Could not hook ...`: a hook didn't install, usually because the game build isn't the one this mod was written for.
 
-If there is no NOS gauge or no flames, check that **Extra Options** is installed and running, and that the `mediaoverride` files from the table above are in the game's `Mount\mediaoverride` folder.
+If there is no NOS gauge or no flames, check that **Extra Options** is installed and running, and that `platform.log` has `[NitroSystem] replaces media\...` lines for the HUD files and `Backfire.xml`. If it says the mod couldn't replace a file, another mod is already replacing it.

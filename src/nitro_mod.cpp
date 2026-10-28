@@ -25,6 +25,7 @@ static FH2Mod* g_mod = nullptr;
 static std::atomic<bool> g_enabled{true};
 static std::atomic<bool> g_debug{false};          // on-screen debug overlay (Mods page)
 static std::atomic<bool> g_backfire_all_cars{true};  // "Backfire on All Cars": applied to the database at startup (needs a restart)
+static std::atomic<bool> g_rumble{true};             // "Controller Rumble" while nitro burns
 static std::atomic<bool> g_refund_on_rewind{true};   // "Refund Nitro on Rewind": a rewind gives back the nitro used since the point it returns to
 static std::atomic<bool> g_refill_on_start{true};    // "Refill Nitro on Race Start": full tank when the car is put somewhere else
 static std::atomic<int> g_hud_theme{1};              // "HUD Theme": 0 = Original (yellow NOS bar), 1 = Fast & Furious (cyan); needs a restart
@@ -32,6 +33,8 @@ static std::atomic<float> g_torque_scale{1.6f};      // Spire default TorqueScal
 static std::atomic<float> g_duration{20.0f};         // Spire default Duration = 20s
 static std::atomic<float> g_buildup_time{0.5f};      // Spire default BuildupTime = 0.5s
 static std::atomic<float> g_recharge_rate{0.2f};     // 0.2 seconds of nitro recharged per second idle
+static std::atomic<float> g_camera_shake{0.65f};     // camera shake while nitro burns, 0..1
+static std::atomic<float> g_sound_volume{0.5f};      // boost and stop sounds, 0..1 (the game's own volume sliders don't reach them)
 
 static std::atomic<bool> g_nitro_active{false};
 static std::atomic<bool> g_depleted_lockout{false};
@@ -95,6 +98,7 @@ static void load_config() {
     g_backfire_all_cars.store(GetPrivateProfileIntW(L"Settings", L"BackfireOnAllCars", 1, g_ini_path) != 0);
     g_refill_on_start.store(GetPrivateProfileIntW(L"Settings", L"RefillOnRaceStart", 1, g_ini_path) != 0);
     g_refund_on_rewind.store(GetPrivateProfileIntW(L"Settings", L"RefundOnRewind", 1, g_ini_path) != 0);
+    g_rumble.store(GetPrivateProfileIntW(L"Settings", L"Rumble", 1, g_ini_path) != 0);
 
     wchar_t theme[32];
     GetPrivateProfileStringW(L"Settings", L"HudTheme", L"FF", theme, 32, g_ini_path);
@@ -121,6 +125,14 @@ static void load_config() {
         float val = wcstof(buf, nullptr);
         if (val >= 0.0f && val <= 5.0f) g_recharge_rate.store(val);
     }
+    if (GetPrivateProfileStringW(L"Settings", L"SoundVolume", L"0.5", buf, 64, g_ini_path) > 0) {
+        float val = wcstof(buf, nullptr);
+        if (val >= 0.0f && val <= 1.0f) g_sound_volume.store(val);
+    }
+    if (GetPrivateProfileStringW(L"Settings", L"CameraShake", L"0.65", buf, 64, g_ini_path) > 0) {
+        float val = wcstof(buf, nullptr);
+        if (val >= 0.0f && val <= 1.0f) g_camera_shake.store(val);
+    }
 }
 
 static void save_config() {
@@ -134,6 +146,7 @@ static void save_config() {
     WritePrivateProfileStringW(L"Settings", L"BackfireOnAllCars", g_backfire_all_cars.load() ? L"1" : L"0", g_ini_path);
     WritePrivateProfileStringW(L"Settings", L"RefillOnRaceStart", g_refill_on_start.load() ? L"1" : L"0", g_ini_path);
     WritePrivateProfileStringW(L"Settings", L"RefundOnRewind", g_refund_on_rewind.load() ? L"1" : L"0", g_ini_path);
+    WritePrivateProfileStringW(L"Settings", L"Rumble", g_rumble.load() ? L"1" : L"0", g_ini_path);
     WritePrivateProfileStringW(L"Settings", L"HudTheme", g_hud_theme.load() == 0 ? L"Original" : L"FF", g_ini_path);
     swprintf_s(buf, 64, L"%.2f", g_torque_scale.load());
     WritePrivateProfileStringW(L"Settings", L"TorqueScale", buf, g_ini_path);
@@ -143,6 +156,10 @@ static void save_config() {
     WritePrivateProfileStringW(L"Settings", L"BuildupTime", buf, g_ini_path);
     swprintf_s(buf, 64, L"%.2f", g_recharge_rate.load());
     WritePrivateProfileStringW(L"Settings", L"RechargeRate", buf, g_ini_path);
+    swprintf_s(buf, 64, L"%.2f", g_sound_volume.load());
+    WritePrivateProfileStringW(L"Settings", L"SoundVolume", buf, g_ini_path);
+    swprintf_s(buf, 64, L"%.2f", g_camera_shake.load());
+    WritePrivateProfileStringW(L"Settings", L"CameraShake", buf, g_ini_path);
 }
 
 // HUD themes. The HUD files live in this DLL (src\hud.rc) and are written to mediaoverride through the platform.
@@ -774,6 +791,80 @@ static uint64_t detour_game_frame(void* self, void* flag) {
 
 static void* g_game_base = nullptr;
 
+// Camera Shake
+// While nitro burns, the driver, hood, bumper and chase cameras shake. Each camera's view matrix (3 rows of
+// right/up/forward, with the translation in the 4th column) comes from its vtable slot +0x50: 0x1034360 for the
+// three mounted cameras, 0x1034430 for the three chase cameras (found through Deuquan's FH2-CameraMods, which
+// shakes the same matrix). The functions are hooked rather than the slots, so the camera mod's own slot hooks
+// still call through to ours. Other cameras that share the functions are left alone.
+typedef void* (*ViewMatrixFn)(void* camera, float* out);
+static ViewMatrixFn g_orig_view_mounted = nullptr;
+static ViewMatrixFn g_orig_view_chase = nullptr;
+static const uintptr_t k_shake_camera_vtables[] = {0x2E78120, 0x2E77EA8, 0x2E703B0, 0x2E783A0, 0x2E78610, 0x2E78880};
+
+static void shake_view_matrix(void* camera, float* m) {
+    const float strength = g_camera_shake.load();
+    if (!camera || !m || !g_game_base || strength <= 0.0f) return;
+    const uintptr_t vtable = *static_cast<uintptr_t*>(camera) - reinterpret_cast<uintptr_t>(g_game_base);
+    bool ours = false;
+    for (uintptr_t v : k_shake_camera_vtables) ours |= v == vtable;
+    if (!ours) return;
+
+    // Fade in over ~0.2s and out over ~0.4s. The shake is a function of the time, so a matrix asked for twice in
+    // one frame comes out the same.
+    static LARGE_INTEGER freq{}, last{};
+    static float envelope = 0.0f, t = 0.0f;
+    LARGE_INTEGER now;
+    QueryPerformanceCounter(&now);
+    if (!freq.QuadPart) QueryPerformanceFrequency(&freq);
+    float dt = last.QuadPart ? static_cast<float>(now.QuadPart - last.QuadPart) / static_cast<float>(freq.QuadPart) : 0.0f;
+    last = now;
+    if (dt < 0.0f || dt > 0.1f) dt = 0.0f;
+    const float target = g_nitro_active.load() ? 1.0f : 0.0f;
+    envelope += (target - envelope) * (std::min)(1.0f, dt * (target > envelope ? 5.0f : 2.5f));
+    t = fmodf(t + dt, 1000.0f);
+    if (envelope < 0.001f) return;
+
+    for (int i = 0; i < 12; ++i)
+        if (!std::isfinite(m[i])) return;
+    float* r0 = m; float* r1 = m + 4; float* r2 = m + 8;
+    const float d02 = r0[0] * r2[0] + r0[1] * r2[1] + r0[2] * r2[2];
+    const float d12 = r1[0] * r2[0] + r1[1] * r2[1] + r1[2] * r2[2];
+    const float l2 = r2[0] * r2[0] + r2[1] * r2[1] + r2[2] * r2[2];
+    if (fabsf(d02) > 0.05f || fabsf(d12) > 0.05f || l2 < 0.9f || l2 > 1.1f) return;   // not a rotation: leave it
+
+    // A slower wobble under a fast buzz, at frequencies that don't line up. At 100 the peaks are about half a degree.
+    constexpr float tau = 6.2831853f;
+    const float a = envelope * strength * 0.008f;
+    const float pitch = a * (0.55f * sinf(tau * 4.3f * t) + 0.30f * sinf(tau * 13.7f * t + 1.1f) + 0.15f * sinf(tau * 23.1f * t + 2.3f));
+    const float yaw   = a * (0.35f * sinf(tau * 3.1f * t + 0.7f) + 0.20f * sinf(tau * 17.3f * t + 0.4f));
+    const float roll  = a * (0.60f * sinf(tau * 5.9f * t + 1.9f) + 0.35f * sinf(tau * 19.7f * t + 0.2f));
+
+    auto turn = [](float* x, float* y, float angle) {   // rotates row x towards row y
+        const float c = cosf(angle), s = sinf(angle);
+        for (int k = 0; k < 4; ++k) {
+            const float nx = c * x[k] + s * y[k], ny = c * y[k] - s * x[k];
+            x[k] = nx;
+            y[k] = ny;
+        }
+    };
+    turn(r2, r0, yaw);
+    turn(r2, r1, pitch);
+    turn(r0, r1, roll);
+}
+
+static void* detour_view_mounted(void* camera, float* out) {
+    void* r = g_orig_view_mounted(camera, out);
+    shake_view_matrix(camera, out);
+    return r;
+}
+
+static void* detour_view_chase(void* camera, float* out) {
+    void* r = g_orig_view_chase(camera, out);
+    shake_view_matrix(camera, out);
+    return r;
+}
+
 // Speedometer Gauge Hook: HUDStatusSpeedometer tick (RVA 0xAD6070 in Anthem)
 // rcx = HUDStatusSpeedometer* speedo, xmm1 = float current_rpm
 typedef void (*SpeedoTickFn)(void* speedo, float rpm);
@@ -908,9 +999,17 @@ static void detour_speedo_tick(void* speedo, float rpm) {
 
 
 // Settings callbacks
+static void set_rumble(WORD left_motor, WORD right_motor);
+
 static void on_setting_changed(void* user, const char* key, int value) {
     if (strcmp(key, "DebugOverlay") == 0) {
         g_debug.store(value != 0);
+        save_config();
+        return;
+    }
+    if (strcmp(key, "Rumble") == 0) {
+        g_rumble.store(value != 0);
+        if (!value) set_rumble(0, 0);   // stop a rumble that's already going
         save_config();
         return;
     }
@@ -968,6 +1067,16 @@ static void on_slider_changed(void* user, const char* key, float value) {
         save_config();
         snprintf(buf, sizeof(buf), "Nitro Duration set to %.1fs (saved)", value);
         if (g_api && g_mod) g_api->log(g_mod, buf);
+    } else if (strcmp(key, "SoundVolume") == 0) {
+        g_sound_volume.store(value);
+        save_config();
+        snprintf(buf, sizeof(buf), "SoundVolume set to %.0f%% (saved)", value * 100.0f);
+        if (g_api && g_mod) g_api->log(g_mod, buf);
+    } else if (strcmp(key, "CameraShake") == 0) {
+        g_camera_shake.store(value);
+        save_config();
+        snprintf(buf, sizeof(buf), "CameraShake set to %.0f%% (saved)", value * 100.0f);
+        if (g_api && g_mod) g_api->log(g_mod, buf);
     } else if (strcmp(key, "BuildupTime") == 0) {
         g_buildup_time.store(value);
         save_config();
@@ -982,7 +1091,9 @@ static void on_slider_changed(void* user, const char* key, float value) {
 }
 
 // Controller Haptics
+// With Controller Rumble off only the "stop" (0, 0) goes through, so the game's own rumble is left alone.
 static void set_rumble(WORD left_motor, WORD right_motor) {
+    if (!g_rumble.load() && (left_motor || right_motor)) return;
     XINPUT_VIBRATION vib{};
     vib.wLeftMotorSpeed = left_motor;
     vib.wRightMotorSpeed = right_motor;
@@ -992,23 +1103,169 @@ static void set_rumble(WORD left_motor, WORD right_motor) {
 }
 
 // Audio Control
-// The sounds are embedded in the DLL. A nos_boost.wav / nos_stop.wav in the FnFNitro folder next to azimuth.exe
-// replaces them, for players who want their own.
-static void play_nitro_sound(const wchar_t* custom_path, const char* embedded_name, DWORD flags) {
-    if (custom_path[0] != L'\0' && GetFileAttributesW(custom_path) != INVALID_FILE_ATTRIBUTES) {
-        PlaySoundW(custom_path, NULL, flags | SND_FILENAME | SND_NODEFAULT);
-    } else if (const void* wav = embedded_file(embedded_name, nullptr)) {
-        PlaySoundW(reinterpret_cast<LPCWSTR>(wav), NULL, flags | SND_MEMORY | SND_NODEFAULT);
+// The boost sound is mixed here from the FF layers embedded in the DLL: the start burst over a bed of the two
+// sustain loops taking turns, with a short crossfade between them. PlaySound can only loop a whole sound, so the
+// mix is made a little longer than a full tank: the start never plays again, however big the tank is. The stop
+// sound is played as it is. A nos_boost.wav / nos_stop.wav in the FnFNitro folder next to azimuth.exe replaces
+// them, for players who want their own (a custom boost sound loops whole). PlaySound has no volume of its own,
+// so the samples are scaled by the Sound Volume slider. A sound is only rebuilt when something it's made from
+// changes, and its buffer has to stay alive while PlaySound is still playing it.
+struct NitroSound {
+    const wchar_t* custom_path;
+    const char* embedded_name;   // nullptr: mixed from the layers
+    std::vector<char> wav;
+    float volume = -1.0f;
+    float seconds = -1.0f;
+    bool custom = false;
+};
+static NitroSound g_boost_sound{g_sound_boost_path, nullptr};
+static NitroSound g_stop_sound{g_sound_stop_path, "nos_stop"};
+
+// Where a 16-bit PCM wav's samples are. samples is nullptr for anything else.
+struct Pcm16 {
+    int16_t* samples = nullptr;
+    size_t frames = 0;
+    int channels = 0;
+    uint32_t rate = 0;
+};
+
+static Pcm16 find_pcm16(char* wav, size_t size) {
+    Pcm16 pcm;
+    if (size < 12 || memcmp(wav, "RIFF", 4) != 0 || memcmp(wav + 8, "WAVE", 4) != 0) return pcm;
+    bool pcm16 = false;
+    for (size_t pos = 12; pos + 8 <= size;) {
+        uint32_t len;
+        memcpy(&len, wav + pos + 4, 4);
+        char* body = wav + pos + 8;
+        const size_t avail = (std::min)(static_cast<size_t>(len), size - pos - 8);
+        if (memcmp(wav + pos, "fmt ", 4) == 0 && avail >= 16) {
+            uint16_t tag, channels, bits, sub = 0;
+            memcpy(&tag, body, 2);
+            memcpy(&channels, body + 2, 2);
+            memcpy(&pcm.rate, body + 4, 4);
+            memcpy(&bits, body + 14, 2);
+            if (tag == 0xFFFE && avail >= 26) memcpy(&sub, body + 24, 2);   // WAVE_FORMAT_EXTENSIBLE: the real tag starts the GUID
+            pcm16 = bits == 16 && channels >= 1 && channels <= 2 && (tag == 1 || (tag == 0xFFFE && sub == 1));
+            pcm.channels = channels;
+        } else if (memcmp(wav + pos, "data", 4) == 0) {
+            if (pcm16) {
+                pcm.samples = reinterpret_cast<int16_t*>(body);
+                pcm.frames = avail / (2 * pcm.channels);
+            }
+            return pcm;
+        }
+        pos += 8 + static_cast<size_t>(len) + (len & 1);
     }
+    return pcm;
+}
+
+static void scale_wav(std::vector<char>& wav, float volume) {
+    Pcm16 pcm = find_pcm16(wav.data(), wav.size());
+    for (size_t i = 0; pcm.samples && i < pcm.frames * pcm.channels; ++i)
+        pcm.samples[i] = static_cast<int16_t>(lroundf(pcm.samples[i] * volume));
+}
+
+static Pcm16 embedded_pcm16(const char* name) {
+    DWORD size = 0;
+    const void* data = embedded_file(name, &size);
+    return data ? find_pcm16(static_cast<char*>(const_cast<void*>(data)), size) : Pcm16{};
+}
+
+// The start burst over the sustains, `seconds` long, as a 48 kHz 16-bit stereo wav.
+static std::vector<char> mix_boost(float seconds, float volume) {
+    constexpr uint32_t rate = 48000;
+    constexpr size_t fade = rate / 50;   // 20 ms crossfade between sustains
+    const Pcm16 start = embedded_pcm16("nos_start");
+    const Pcm16 sustains[2] = {embedded_pcm16("nos_sustain_1"), embedded_pcm16("nos_sustain_2")};
+    for (const Pcm16& p : {start, sustains[0], sustains[1]})
+        if (!p.samples || p.rate != rate || p.frames <= 2 * fade) return {};
+
+    const size_t frames = static_cast<size_t>(seconds * rate);
+    std::vector<float> mix(frames * 2, 0.0f);
+    for (size_t pos = 0, n = 0; pos < frames; pos += sustains[n++ % 2].frames - fade) {
+        const Pcm16& s = sustains[n % 2];
+        for (size_t j = 0; j < s.frames && pos + j < frames; ++j) {
+            float keep = 0.0f, add = 1.0f;
+            if (n > 0 && j < fade) {   // equal-power crossfade from the sustain before
+                const float a = (j + 0.5f) / fade * 1.5707963f;
+                keep = cosf(a);
+                add = sinf(a);
+            }
+            for (int c = 0; c < 2; ++c) {
+                float& out = mix[(pos + j) * 2 + c];
+                out = out * keep + s.samples[j * s.channels + (s.channels == 2 ? c : 0)] * add;
+            }
+        }
+    }
+    for (size_t j = 0; j < start.frames && j < frames; ++j)
+        for (int c = 0; c < 2; ++c) mix[j * 2 + c] += start.samples[j * start.channels + (start.channels == 2 ? c : 0)];
+
+    const uint32_t data_size = static_cast<uint32_t>(frames * 4);
+    std::vector<char> wav(44 + data_size);
+    auto put32 = [&](size_t at, uint32_t v) { memcpy(wav.data() + at, &v, 4); };
+    auto put16 = [&](size_t at, uint16_t v) { memcpy(wav.data() + at, &v, 2); };
+    memcpy(wav.data(), "RIFF", 4);
+    put32(4, 36 + data_size);
+    memcpy(wav.data() + 8, "WAVEfmt ", 8);
+    put32(16, 16);
+    put16(20, 1);            // PCM
+    put16(22, 2);            // stereo
+    put32(24, rate);
+    put32(28, rate * 4);     // bytes per second
+    put16(32, 4);            // bytes per frame
+    put16(34, 16);           // bits
+    memcpy(wav.data() + 36, "data", 4);
+    put32(40, data_size);
+    int16_t* out = reinterpret_cast<int16_t*>(wav.data() + 44);
+    for (size_t i = 0; i < mix.size(); ++i)
+        out[i] = static_cast<int16_t>(lroundf((std::max)(-32768.0f, (std::min)(32767.0f, mix[i] * volume))));
+    return wav;
+}
+
+static void play_nitro_sound(NitroSound& sound, DWORD flags) {
+    const float volume = g_sound_volume.load();
+    if (volume <= 0.0f) return;
+    const bool custom = sound.custom_path[0] != L'\0' && GetFileAttributesW(sound.custom_path) != INVALID_FILE_ATTRIBUTES;
+    const float seconds = sound.embedded_name ? 0.0f : g_duration.load() + 3.0f;
+    if (sound.wav.empty() || sound.volume != volume || sound.custom != custom || (!custom && sound.seconds != seconds)) {
+        sound.wav.clear();
+        if (custom) {
+            HANDLE f = CreateFileW(sound.custom_path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
+            if (f != INVALID_HANDLE_VALUE) {
+                LARGE_INTEGER size{};
+                DWORD got = 0;
+                if (GetFileSizeEx(f, &size) && size.QuadPart > 0 && size.QuadPart < 256 * 1024 * 1024) {
+                    sound.wav.resize(static_cast<size_t>(size.QuadPart));
+                    if (!ReadFile(f, sound.wav.data(), static_cast<DWORD>(sound.wav.size()), &got, nullptr) || got != sound.wav.size())
+                        sound.wav.clear();
+                }
+                CloseHandle(f);
+            }
+            if (volume < 1.0f) scale_wav(sound.wav, volume);
+        } else if (!sound.embedded_name) {
+            sound.wav = mix_boost(seconds, volume);
+        } else {
+            DWORD size = 0;
+            if (const void* wav = embedded_file(sound.embedded_name, &size))
+                sound.wav.assign(static_cast<const char*>(wav), static_cast<const char*>(wav) + size);
+            if (volume < 1.0f) scale_wav(sound.wav, volume);
+        }
+        sound.volume = volume;
+        sound.seconds = seconds;
+        sound.custom = custom;
+    }
+    if (!sound.wav.empty())
+        PlaySoundW(reinterpret_cast<LPCWSTR>(sound.wav.data()), NULL, flags | SND_MEMORY | SND_NODEFAULT);
 }
 
 static void start_nitro_audio() {
-    play_nitro_sound(g_sound_boost_path, "nos_boost", SND_ASYNC | SND_LOOP);
+    PlaySoundW(NULL, NULL, 0);   // nothing may still be playing from a buffer that's about to be rebuilt
+    play_nitro_sound(g_boost_sound, SND_ASYNC | SND_LOOP);
 }
 
 static void stop_nitro_audio() {
     PlaySoundW(NULL, NULL, 0);
-    play_nitro_sound(g_sound_stop_path, "nos_stop", SND_ASYNC);
+    play_nitro_sound(g_stop_sound, SND_ASYNC);
 }
 
 // Fill the tank. One cooldown for every trigger below, since a single transition can set off several.
@@ -1157,6 +1414,16 @@ static void nitro_worker_thread() {
     } else {
         g_api->log(g_mod, "Failed to hook CWorldCollObjMan::Update; nitro will boost every simulated car.");
     }
+
+    void* view_mounted = (void*)((uintptr_t)base + 0x1034360);
+    void* view_chase = (void*)((uintptr_t)base + 0x1034430);
+    FH2Hook* hook_vm = g_api->hook_function(g_mod, "CameraMounted::ViewMatrix", view_mounted, (void*)detour_view_mounted, (void**)&g_orig_view_mounted);
+    FH2Hook* hook_vc = g_api->hook_function(g_mod, "CameraFollow::ViewMatrix", view_chase, (void*)detour_view_chase, (void**)&g_orig_view_chase);
+    bool shake_mounted = hook_vm && g_api->enable_hooks(g_mod, hook_vm);
+    bool shake_chase = hook_vc && g_api->enable_hooks(g_mod, hook_vc);
+    g_api->log(g_mod, shake_mounted && shake_chase ? "Camera view matrices hooked (camera shake during nitro)."
+                      : shake_mounted || shake_chase ? "Only one camera view matrix could be hooked; camera shake works in some views."
+                      : "Could not hook the camera view matrices; no camera shake.");
 
     // Hook CarPresentation11 exhaust backfire prep (RVA 0x13B0DE6)
     void* backfire_call = (void*)((uintptr_t)base + 0x13B0DE6);
@@ -1504,7 +1771,7 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
     FH2ModInfo info{};
     info.size             = sizeof(info);
     info.name             = "NitroSystem";
-    info.version          = "1.3.1";
+    info.version          = "1.4.0";
     info.github_repo      = "qiangqiang101/NitroSystem";
     info.platform_version = FH2MOD_PLATFORM_VERSION;
     info.check_updates    = 1;
@@ -1569,6 +1836,15 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
         s_rewind.value       = g_refund_on_rewind.load() ? 1 : 0;
         s_rewind.on_change   = on_setting_changed;
         api->add_setting(g_mod, &s_rewind);
+
+        FH2Setting s_rumble{};
+        s_rumble.size        = sizeof(s_rumble);
+        s_rumble.key         = "Rumble";
+        s_rumble.label       = "Nitro Controller Rumble";
+        s_rumble.description = "Rumbles the controller while Nitro is active. The game's own rumble isn't affected.";
+        s_rumble.value       = g_rumble.load() ? 1 : 0;
+        s_rumble.on_change   = on_setting_changed;
+        api->add_setting(g_mod, &s_rumble);
 
         if (api->api_version >= 5) {
             // Sliders can only show numbers, so the button is picked by number (listed in the description).
@@ -1664,6 +1940,36 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
             s_recharge.decimals      = 1;
             s_recharge.on_slide      = on_slider_changed;
             api->add_setting(g_mod, &s_recharge);
+
+            FH2Setting s_volume{};
+            s_volume.size          = sizeof(s_volume);
+            s_volume.key           = "SoundVolume";
+            s_volume.label         = "Nitro Sound Volume";
+            s_volume.description   = "Volume of the boost and stop sounds. The game's own volume sliders don't change them.";
+            s_volume.kind          = FH2_SETTING_SLIDER;
+            s_volume.min           = 0.0f;
+            s_volume.max           = 1.0f;
+            s_volume.step          = 0.05f;
+            s_volume.slider_value  = g_sound_volume.load();
+            s_volume.display_scale = 100.0f;
+            s_volume.decimals      = 0;
+            s_volume.on_slide      = on_slider_changed;
+            api->add_setting(g_mod, &s_volume);
+
+            FH2Setting s_shake{};
+            s_shake.size          = sizeof(s_shake);
+            s_shake.key           = "CameraShake";
+            s_shake.label         = "Nitro Camera Shake";
+            s_shake.description   = "How much the camera shakes while Nitro is active, in the driver, hood, bumper and chase views. 0 turns it off.";
+            s_shake.kind          = FH2_SETTING_SLIDER;
+            s_shake.min           = 0.0f;
+            s_shake.max           = 1.0f;
+            s_shake.step          = 0.05f;
+            s_shake.slider_value  = g_camera_shake.load();
+            s_shake.display_scale = 100.0f;
+            s_shake.decimals      = 0;
+            s_shake.on_slide      = on_slider_changed;
+            api->add_setting(g_mod, &s_shake);
 
         }
     }

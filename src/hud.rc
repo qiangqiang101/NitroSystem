@@ -21,5 +21,7 @@ HUD_Dial_Digital_Gear_8 RCDATA "../hud/ff/HUD_Dial_Digital_Gear_8.swatchbin"
 
 Backfire RCDATA "../particles/Backfire.xml"
 
-nos_boost RCDATA "../sounds/nos_boost.wav"
+nos_start RCDATA "../sounds/nos_start.wav"
+nos_sustain_1 RCDATA "../sounds/nos_sustain_1.wav"
+nos_sustain_2 RCDATA "../sounds/nos_sustain_2.wav"
 nos_stop RCDATA "../sounds/nos_stop.wav"
