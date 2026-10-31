@@ -27,9 +27,9 @@ Hold **LB** (or any button you pick) to burn nitro: your car gets a strong push,
 | Setting | Range | Default | What it does |
 |---|---|---|---|
 | Nitro System | On / Off | On | Turns nitro on or off. |
-| Nitro Button | 1 - 16 | 1 (LB) | Which button burns nitro. The numbers are listed under the ini notes below. Applies right away. |
+| Nitro Button | LB, RB, A, B, X, Y, LS Click, RS Click, D-Pad, Back, Start, LT, RT | LB | Which button burns nitro. Applies right away. |
 | Nitro Debug Overlay | On / Off | Off | Draws debug info over the game (see below). |
-| HUD Theme | 1 - 2 | 2 | 1 is the original Forza Horizon 2 HUD with a yellow NOS bar. 2 is the Fast & Furious HUD: cyan NOS bar, cyan gears and cyan ABS / TCS / STM icons. **Needs a game restart.** |
+| HUD Theme | Original / Fast & Furious | Fast & Furious | Original is the Forza Horizon 2 HUD with a yellow NOS bar. Fast & Furious has a cyan NOS bar, cyan gears and cyan ABS / TCS / STM icons. **Needs a game restart.** |
 | Nitro Boost Multiplier | 1.0x - 2.0x | 1.6x | Strength of the push. |
 | Nitro Tank Capacity (sec) | 5 - 60 | 20 | Seconds of nitro in a full tank. |
 | Nitro Buildup Time (sec) | 0.1 - 2.0 | 0.5 | How long the push takes to ramp up. |
@@ -40,6 +40,8 @@ Hold **LB** (or any button you pick) to burn nitro: your car gets a strong push,
 | Refill Nitro on Race Start | On / Off | On | Fills the tank when a race starts, you quit one, you change car or you fast travel. Applies right away. |
 | Refund Nitro on Rewind | On / Off | On | Rewinding gives back the nitro you used since the point you rewind to. Applies right away. |
 | Nitro Controller Rumble | On / Off | On | Rumbles the controller while nitro burns. The game's own rumble isn't affected. Applies right away. |
+| Drivatar Nitro | On / Off | Off | Drivatars use nitro too, whenever they can, at any speed: they let off only in the air, in a big slide or when the tank runs dry (then, like you, they wait for 2 s of nitro). They don't boost before the race starts: not while your HUD is down, and only once they've been rolling for 2 s off the grid. Once they're more than 100 m ahead of you they coast, so you can catch up; behind you they boost freely. Each has a tank of its own with twice your capacity and recharge, and your boost and buildup. Their exhausts flame (after a Drivatar's first backfire, which is how its tailpipes are learned) and the boost plays through the game's own audio at the car, so you hear it from where it is, fading out by 150 m. The nearest 6 are heard, at the Drivatar Nitro Volume. Applies right away. |
+| Drivatar Nitro Volume | 0 - 100 | 25 | Volume of the Drivatars' nitro sound, heard from their cars. 0 silences it. Applies right away. |
 
 Settings are saved to `fh2-mods\FnFNitro.ini`:
 
@@ -52,20 +54,22 @@ Duration=20.0
 BuildupTime=0.50
 RechargeRate=0.20
 SoundVolume=0.50
+DrivatarSoundVolume=0.25
 CameraShake=0.65
 DebugOverlay=0
 BackfireOnAllCars=1
 RefillOnRaceStart=1
 RefundOnRewind=1
+DrivatarNitro=0
 Rumble=1
 HudTheme=FF
 ```
 
 A few notes on the file:
 
-- `HudTheme` is `FF` (Fast & Furious, the default) or `Original`. The Mods page shows it as a slider, 1 or 2. The mod writes the HUD files when it starts and when you change the slider, and the game reads them the next time it starts.
+- `HudTheme` is `FF` (Fast & Furious, the default) or `Original`. The mod writes the HUD files when it starts and when you change the setting, and the game reads them the next time it starts.
 
-- `NitroButton` picks which controller button burns nitro (default `LB`). An unknown value falls back to `LB`. The Mods page can only show numbers, so there the **Nitro Button** row is a slider from 1 to 16; in the ini you write the name:
+- `NitroButton` picks which controller button burns nitro (default `LB`). An unknown value falls back to `LB`. In the ini you write the name:
 
   | # | Name | Button | # | Name | Button |
   |---|---|---|---|---|---|
@@ -79,18 +83,20 @@ A few notes on the file:
   | 8 | `RS` | Right stick click | 16 | `RT` | Right trigger |
 
   Pick one the game doesn't already use while driving, or it will do both at once. Changes on the Mods page apply immediately; edits to the file apply the next time the game starts.
+
+  With a platform older than 2.8.0 the Mods page can't show names, so **Nitro Button** is a slider with the numbers above and **HUD Theme** is a slider where 1 is Original and 2 is Fast & Furious.
 - `BackfireOnAllCars` is the **Backfire on All Cars** row on the Mods page. When it is on, the mod makes every car able to backfire by changing the game database at startup, which the flames depend on. Turn it off to leave the game's own backfire settings alone: flames then only work on cars the game already lets backfire. A change only takes effect the next time the game starts.
 
 ### Debug overlay
 
-Switch on **Nitro Debug Overlay** to draw a small panel in the top-left corner of the game window: nitro state and fuel, whether the mod thinks you are driving, whether your car has been found, the learned exhaust tips, and the flame counters. It is a transparent window laid over the game, like the FPS counter, so the game must run in **borderless or windowed** mode.
+Switch on **Nitro Debug Overlay** to draw a small panel in the top-left corner of the game window: nitro state and fuel, whether the mod thinks you are driving, whether your car has been found (by the game's own car kinds, or by position until those are known), how many Drivatars are boosting, the learned exhaust tips, and the flame counters. It is a transparent window laid over the game, like the FPS counter, so the game must run in **borderless or windowed** mode.
 
 ---
 
 ## Requirements
 
 - **Azimuth** launcher with Forza Horizon 2.
-- The **FH2 Mod Platform** (`DWrite.dll` in the Azimuth folder; tested with platform 2.7.4). The other mods you may already have, such as ShowFPS or Achievements, use the same one.
+- The **FH2 Mod Platform** (`DWrite.dll` in the Azimuth folder; tested with platform 2.8.0). The other mods you may already have, such as ShowFPS or Achievements, use the same one.
 - **Forza Horizon 2 Extra Options.** The NOS speedometer gauge and its HUD textures, the blue flame effect and the "every car can backfire" database change are all delivered through its `mediaoverride` folder. Without it the nitro push, sound, camera shake and rumble still work, but those won't apply.
 
 ---
@@ -211,3 +217,10 @@ Everything the mod says goes to `fh2-mods\platform.log` (starts fresh every laun
 - `Failed to ...` or `Could not hook ...`: a hook didn't install, usually because the game build isn't the one this mod was written for.
 
 If there is no NOS gauge or no flames, check that **Extra Options** is installed and running, and that `platform.log` has `[NitroSystem] replaces media\...` lines for the HUD files and `Backfire.xml`. If it says the mod couldn't replace a file, another mod is already replacing it.
+
+---
+
+## Credits
+
+- **[suderek22](https://github.com/suderek22)**, for [FH2_HonkHonk](https://github.com/suderek22/FH2_HonkHonk). It showed how to play sounds through the game's own FMOD audio engine at a position in the world, which is how the Drivatars' nitro sound is played from their cars. No HonkHonk code is used here: this mod calls the same FMOD functions with its own code.
+- **Deuquan**, for FH2-CameraMods. It showed which camera functions build the driver, hood, bumper and chase cameras' view, which is where the nitro camera shake is applied.
