@@ -4,8 +4,10 @@ Fast & Furious style **nitro** for **Forza Horizon 2** (Xbox One build on PC via
 
 Hold **LB** (or any button you pick) to burn nitro: your car gets a strong push, blue flames shoot from your tailpipes, the speedometer gets a draining NOS gauge with a glowing tip, the nitro roars, the camera shakes and the controller rumbles.
 
-[<img width="1536" height="864" alt="image" src="https://github.com/user-attachments/assets/ce6448ca-6403-46ca-b6ec-baeee1115d85" />](https://www.youtube.com/watch?v=T0PnPXlaUCg)
-
+<img width="1919" height="1079" alt="Screenshot 2026-10-22 013921" src="https://github.com/user-attachments/assets/15887438-8606-4627-bd2c-25c6a99baa3a" />
+<img width="1919" height="1079" alt="Screenshot 2026-10-22 013609" src="https://github.com/user-attachments/assets/134fec85-6992-4515-b108-90b2545a1702" />
+<img width="1919" height="1079" alt="Screenshot 2026-10-22 012950" src="https://github.com/user-attachments/assets/6d4a7301-aa29-4d68-ab52-2b827baea2b3" />
+<img width="1919" height="1079" alt="Screenshot 2026-10-22 014318" src="https://github.com/user-attachments/assets/38a8e23d-2a2d-4786-af72-a05dc46225dc" />
 
 ---
 
@@ -14,7 +16,6 @@ Hold **LB** (or any button you pick) to burn nitro: your car gets a strong push,
 - **Nitro on LB, or any button you choose.** Hold the left shoulder button on any connected controller, or remap it to another button, d-pad direction or trigger (see **Nitro Button** below). There is no keyboard key.
 - **A real tank.** Nitro drains while you hold the nitro button and recharges when you let go. Run it dry and it locks out until you release the button and have recharged about 2 seconds.
 - **Buildup curve.** The push ramps up over a short time instead of snapping on.
-- **Only your car.** AI racers and traffic are never boosted.
 - **Stays on the road.** The push follows the horizontal direction of the car's nose, so a pitched-up nose doesn't launch you into the sky, and nothing is applied while the car is airborne (or for a moment after landing).
 - **Only while driving.** Nitro only works while the game is simulating your car and the speedometer HUD is running, so it stays off in the pause menu, the map and loading screens. The tank doesn't drain or recharge while the game is paused. (Garage and car meet lobbies should also stay off, since the speedometer isn't active there.)
 - **NOS gauge on the speedometer.** Both the **analog** and the **digital** speedometers get a four-segment NOS bar that drains as you use nitro, with a glowing tip that follows the leading edge of the fill.
