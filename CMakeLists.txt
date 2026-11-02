@@ -29,6 +29,9 @@ target_compile_definitions(FnFNitro PRIVATE
 )
 
 if(MSVC)
+    # Avoid loading a second C++ runtime before Azimuth initializes another game.
+    set_property(TARGET FnFNitro PROPERTY MSVC_RUNTIME_LIBRARY
+        "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     target_compile_options(FnFNitro PRIVATE /W4 /permissive- /utf-8 /EHsc)
 else()
     target_compile_options(FnFNitro PRIVATE -Wall -Wextra)
