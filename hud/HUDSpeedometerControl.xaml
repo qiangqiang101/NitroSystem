@@ -579,8 +579,8 @@
                             <local:FZMaterialPresetDigitalGauge FillAmount="{Binding GaugeFillAmount}" RedLineAmount="{Binding GaugeRedlineAmount}" SmallDash="{Binding GaugeSmallDashAmount}" LargeDash="{Binding GaugeLargeDashAmount}" />
                         </local:FZMaterial.Preset>
                     </local:FZMaterial>
-                    <!-- Authentic Fast & Furious NOS Digital Bar (4 Segments with Transparent Gaps) -->
-                    <StackPanel Orientation="Horizontal" Margin="21,-22,0,0">
+                    <!-- Authentic Fast & Furious NOS Digital Bar (4 Segments with Transparent Gaps). Hidden in a car the nitro leaves alone (YPos of RPMGaugeNumbers[18] is 1 or 0) -->
+                    <StackPanel Orientation="Horizontal" Margin="21,-22,0,0" Opacity="{Binding RPMGaugeNumbers[18].YPos}">
                         <Grid Margin="0,6,0,0">
                             <!-- 4 Sequential NOS Segments with Translucent Empty Background & Active White Tip Glow -->
                             <StackPanel Orientation="Horizontal" Width="245" Height="8" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="1,0,0,0">
@@ -737,6 +737,8 @@
                           </local:FZMaterial.Preset>
                      </local:FZMaterial>
 
+<!-- The NOS radial bar, hidden in a car the nitro leaves alone (YPos of RPMGaugeNumbers[18] is 1 or 0) -->
+                    <Grid Opacity="{Binding RPMGaugeNumbers[18].YPos}">
 <!-- Authentic Fast & Furious NOS Radial Bar Translucent Background Track (4 Segments) -->
                     <!-- Background Segment 4 (Top: Angle 128.7) -->
                     <local:FZMaterial Height="300"
@@ -1267,6 +1269,7 @@
                             </TransformGroup>
                         </local:FZMaterial.RenderTransform>
                     </local:FZMaterial>
+                    </Grid>
 
 <local:FZMaterial Style="{StaticResource A_Style_FZMaterial_Needle}" HorizontalAlignment="Center" VerticalAlignment="Center"> <!-- Needle -->
 

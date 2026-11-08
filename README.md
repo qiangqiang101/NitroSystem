@@ -19,9 +19,10 @@ Hold **LB** (or any button you pick) to burn nitro: your car gets a strong push,
 - **Stays on the road.** The push follows the horizontal direction of the car's nose, so a pitched-up nose doesn't launch you into the sky, and nothing is applied while the car is airborne (or for a moment after landing).
 - **Only while driving.** Nitro only works while the game is simulating your car and the speedometer HUD is running, so it stays off in the pause menu, the map and loading screens. The tank doesn't drain or recharge while the game is paused. (Garage and car meet lobbies should also stay off, since the speedometer isn't active there.)
 - **NOS gauge on the speedometer.** Both the **analog** and the **digital** speedometers get a four-segment NOS bar that drains as you use nitro, with a glowing tip that follows the leading edge of the fill.
-- **Exhaust flames.** Blue flames come out of your car's real tailpipes while nitro is held (the mod drives the game's own backfire effect). Which tailpipes your car has is learned from the game's own backfires, so flames start after the first backfire of a drive or after you switch cars, which normally takes a few seconds.
-- **Sound, rumble and camera shake.** A boost sound that kicks in and then holds for as long as the tank lasts, and a stop sound (built into the DLL; put your own `nos_boost.wav` and `nos_stop.wav` in an `FnFNitro` folder next to `azimuth.exe` to replace them; your own boost sound loops from its start), a rumble that ramps up with the boost, and a camera shake while it burns. Each has its own setting below.
-- **In-game settings.** Everything below is on **Pause > Settings > MODS**.
+- **Exhaust flames.** Blue flames come out of your car's real tailpipes while nitro is held, from the first second (the mod drives the game's own backfire effect, at the exhaust positions the car's own model gives).
+- **Sound, rumble and camera shake.** A boost sound that kicks in and then holds for as long as the tank lasts, and a stop sound, both played by the game's own audio from your car (fly a drone away and they fade with distance) (built into the DLL; put your own `nos_boost.wav` and `nos_stop.wav` in an `FnFNitro` folder next to `azimuth.exe` to replace them; your own boost sound loops from its start), a rumble that ramps up with the boost, and a camera shake while it burns. Each has its own setting below.
+- **In-game settings.** Everything below is on **Pause > Settings > MODS**, in the game's language: Brazilian Portuguese, Dutch, French, German, Italian, Japanese, Korean, Polish, Russian, Spanish (Spain and Mexico) and Traditional Chinese. Czech and Hungarian stay English, as the game's own text does there. The Mods page is built before the game has picked its language, so it uses the one the game had the last time it ran (the very first time, Azimuth's Language setting): after you change the game's language it follows one launch later.
+- **Works alongside car mods.** The **Knight Rider** car and other mods that patch the speedometer or the car's kind run alongside it, and cars listed in `DisabledCars` (the Knight Rider car by default) get no nitro and no NOS gauge, so their own mod has the button.
 
 ### In-game settings
 
@@ -41,7 +42,7 @@ Hold **LB** (or any button you pick) to burn nitro: your car gets a strong push,
 | Refill Nitro on Race Start | On / Off | On | Fills the tank when a race starts, you quit one, you change car or you fast travel. Applies right away. |
 | Refund Nitro on Rewind | On / Off | On | Rewinding gives back the nitro you used since the point you rewind to. Applies right away. |
 | Nitro Controller Rumble | On / Off | On | Rumbles the controller while nitro burns. The game's own rumble isn't affected. Applies right away. |
-| Drivatar Nitro | On / Off | Off | Drivatars use nitro too, whenever they can, at any speed: they let off only in the air, in a big slide or when the tank runs dry (then, like you, they wait for 2 s of nitro). They don't boost before the race starts: not while your HUD is down, and only once they've been rolling for 2 s off the grid. Once they're more than 100 m ahead of you they coast, so you can catch up; behind you they boost freely. Each has a tank of its own with twice your capacity and recharge, and your boost and buildup. Their exhausts flame (after a Drivatar's first backfire, which is how its tailpipes are learned) and the boost plays through the game's own audio at the car, so you hear it from where it is, fading out by 150 m. The nearest 6 are heard, at the Drivatar Nitro Volume. Applies right away. |
+| Drivatar Nitro | On / Off | Off | Drivatars use nitro too, whenever they can, at any speed: they let off only in the air, in a big slide or when the tank runs dry (then, like you, they wait for 2 s of nitro). They don't boost before the race starts: not while your HUD is down, and only once they've been rolling for 2 s off the grid. Once they're more than 100 m ahead of you they coast, so you can catch up; behind you they boost freely. Each has a tank of its own with twice your capacity and recharge, and your boost and buildup. Their exhausts flame and the boost plays through the game's own audio at the car, so you hear it from where it is, fading out by 150 m. The nearest 6 are heard, at the Drivatar Nitro Volume. Applies right away. |
 | Drivatar Nitro Volume | 0 - 100 | 25 | Volume of the Drivatars' nitro sound, heard from their cars. 0 silences it. Applies right away. |
 
 Settings are saved to `fh2-mods\FnFNitro.ini`:
@@ -64,6 +65,7 @@ RefundOnRewind=1
 DrivatarNitro=0
 Rumble=1
 HudTheme=FF
+DisabledCars=3884
 ```
 
 A few notes on the file:
@@ -86,11 +88,12 @@ A few notes on the file:
   Pick one the game doesn't already use while driving, or it will do both at once. Changes on the Mods page apply immediately; edits to the file apply the next time the game starts.
 
   With a platform older than 2.8.0 the Mods page can't show names, so **Nitro Button** is a slider with the numbers above and **HUD Theme** is a slider where 1 is Original and 2 is Fast & Furious.
+- `DisabledCars` lists cars that get no nitro and no NOS gauge, by the game's car id (`Data_Car.Id`), separated by commas: `3884` is the Knight Rider car, whose own mod uses LB. Leave it empty to give every car nitro. The platform log shows `Your car: id ...` each time you change car, which is how to find a car's id. There is no Mods page row for it.
 - `BackfireOnAllCars` is the **Backfire on All Cars** row on the Mods page. When it is on, the mod makes every car able to backfire by changing the game database at startup, which the flames depend on. Turn it off to leave the game's own backfire settings alone: flames then only work on cars the game already lets backfire. A change only takes effect the next time the game starts.
 
 ### Debug overlay
 
-Switch on **Nitro Debug Overlay** to draw a small panel in the top-left corner of the game window: nitro state and fuel, whether the mod thinks you are driving, whether your car has been found (by the game's own car kinds, or by position until those are known), how many Drivatars are boosting, the learned exhaust tips, and the flame counters. It is a transparent window laid over the game, like the FPS counter, so the game must run in **borderless or windowed** mode.
+Switch on **Nitro Debug Overlay** to draw a small panel in the top-left corner of the game window: nitro state and fuel, whether the mod thinks you are driving, whether your car has been found (by the game's own car kinds, or by position until those are known), how many Drivatars are boosting, the exhaust tips, and the flame counters. It is a transparent window laid over the game, like the FPS counter, so the game must run in **borderless or windowed** mode.
 
 ---
 
@@ -203,7 +206,6 @@ foreach ($t in $targets) {
 
 ## Known limitations
 
-- **Flames need a first backfire.** After you start driving or switch cars, there are no nitro flames until the game has fired one of its own backfires for that car.
 - **No nitro package in the upgrade shop.** The game's upgrade system has no slot for it.
 
 ---
@@ -223,5 +225,6 @@ If there is no NOS gauge or no flames, check that **Extra Options** is installed
 
 ## Credits
 
+- **NitroSystem II**, this mod's Forza Horizon 3 port, which found that the car can be asked for its exhaust locators before its first backfire. FH2 does it the same way, which is how the flames start straight away.
 - **[suderek22](https://github.com/suderek22)**, for [FH2_HonkHonk](https://github.com/suderek22/FH2_HonkHonk). It showed how to play sounds through the game's own FMOD audio engine at a position in the world, which is how the Drivatars' nitro sound is played from their cars. No HonkHonk code is used here: this mod calls the same FMOD functions with its own code.
 - **Deuquan**, for FH2-CameraMods. It showed which camera functions build the driver, hood, bumper and chase cameras' view, which is where the nitro camera shake is applied.

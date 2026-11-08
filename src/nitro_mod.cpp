@@ -1,4 +1,5 @@
 #include "fh2mod.h"
+#include "lang.h"
 #include "fh2game.h"
 #include "legacy_files.h"
 
@@ -39,6 +40,20 @@ static std::atomic<float> g_recharge_rate{0.2f};     // 0.2 seconds of nitro rec
 static std::atomic<float> g_camera_shake{0.65f};     // camera shake while nitro burns, 0..1
 static std::atomic<float> g_sound_volume{0.5f};      // boost and stop sounds, 0..1 (the game's own volume sliders don't reach them)
 static std::atomic<float> g_ai_sound_volume{0.25f};  // the Drivatars' boost and stop sounds, 0..1
+
+// Cars with a mod of their own on the nitro button: no nitro while the player drives one (DisabledCars, by the
+// game's car id; 3884 is the Knight Rider mod's KITT, whose Pursuit Mode is on LB too). Set when the ini is read.
+static const int kMaxDisabledCars = 32;
+static int g_disabled_cars[kMaxDisabledCars];
+static std::atomic<int> g_disabled_count{0};
+static std::atomic<int> g_player_car_id{0};   // the player's car's id, 0 until the game has said
+
+static bool car_disabled(int id) {
+    const int n = g_disabled_count.load();
+    for (int i = 0; i < n; ++i)
+        if (id != 0 && g_disabled_cars[i] == id) return true;
+    return false;
+}
 
 static std::atomic<bool> g_nitro_active{false};
 static std::atomic<bool> g_depleted_lockout{false};
@@ -144,6 +159,19 @@ static void load_config() {
         float val = wcstof(buf, nullptr);
         if (val >= 0.0f && val <= 1.0f) g_camera_shake.store(val);
     }
+
+    // Car ids, separated by commas or spaces
+    wchar_t cars[512];
+    GetPrivateProfileStringW(L"Settings", L"DisabledCars", L"3884", cars, 512, g_ini_path);
+    int n = 0;
+    for (wchar_t* p = cars; *p && n < kMaxDisabledCars;) {
+        wchar_t* end = nullptr;
+        const long id = wcstol(p, &end, 10);
+        if (end == p) { ++p; continue; }
+        if (id > 0) g_disabled_cars[n++] = (int)id;
+        p = end;
+    }
+    g_disabled_count.store(n);
 }
 
 static void save_config() {
@@ -159,6 +187,9 @@ static void save_config() {
     WritePrivateProfileStringW(L"Settings", L"RefundOnRewind", g_refund_on_rewind.load() ? L"1" : L"0", g_ini_path);
     WritePrivateProfileStringW(L"Settings", L"DrivatarNitro", g_drivatar_nitro.load() ? L"1" : L"0", g_ini_path);
     WritePrivateProfileStringW(L"Settings", L"Rumble", g_rumble.load() ? L"1" : L"0", g_ini_path);
+    std::wstring cars;
+    for (int i = 0; i < g_disabled_count.load(); ++i) cars += (i ? L"," : L"") + std::to_wstring(g_disabled_cars[i]);
+    WritePrivateProfileStringW(L"Settings", L"DisabledCars", cars.c_str(), g_ini_path);
     WritePrivateProfileStringW(L"Settings", L"HudTheme", g_hud_theme.load() == 0 ? L"Original" : L"FF", g_ini_path);
     swprintf_s(buf, 64, L"%.2f", g_torque_scale.load());
     WritePrivateProfileStringW(L"Settings", L"TorqueScale", buf, g_ini_path);
@@ -462,6 +493,7 @@ static bool is_player_car(void* car, uint64_t now) {
 static const uintptr_t kForzaCarDynOffset = 0x4C08;
 static const uintptr_t kDynInterfaceOffset = 0x3A0;
 static const uintptr_t kForzaCarPresOffset = 0x4D38;
+static const uintptr_t kForzaCarIdOffset = 0x118;   // the car's id in the game database (Data_Car.Id)
 static const uintptr_t kDeferredPresOffset = 0x8;
 static const uintptr_t kDeferredPresVtable = 0x2EBEF68;   // TRefCounted<CCarPresentationDeferred>, at its +0x10
 static const uintptr_t kCarPresVtables[] = {0x2EC1450, 0x2EC2B70};   // CarPresentation, its TRefCounted wrapper
@@ -469,9 +501,9 @@ static const uintptr_t kCarDynVtables[] = {0x2EB4B08, 0x2EB5D68};    // CCarDyna
 static const uint64_t kKindFreshMs = 500;
 
 typedef void (*ForzaCarUpdateFn)(void* car, float dt, float b, uint32_t flag);
-typedef int (*ForzaCarKindFn)(void* car);
 static ForzaCarUpdateFn g_orig_forzacar_update = nullptr;
-static ForzaCarKindFn g_forzacar_kind = nullptr;
+static const uintptr_t kForzaCarKindOffset = 0x4D08;   // what FH2_GAME_FORZACAR_KIND returns ("mov eax, [rcx+0x4D08]")
+static bool g_forzacar_hooked = false;
 
 struct KnownCar {
     std::atomic<void*> dyn;        // written by the game thread, read by the physics thread
@@ -533,9 +565,11 @@ static bool player_known_by_kind(uint64_t now) {
     return now - g_kind_player_tick.load() < kKindFreshMs;
 }
 
+static void note_car_locators(void* car, int kind, uintptr_t pres, uint64_t now);   // with the flames, below
+
 static void detour_forzacar_update(void* car, float dt, float b, uint32_t flag) {
     if (g_orig_forzacar_update) g_orig_forzacar_update(car, dt, b, flag);
-    if (!car || !g_forzacar_kind || !g_game_base) return;
+    if (!car || !g_forzacar_hooked || !g_game_base) return;
 
     __try {
         uintptr_t iface = *(const uintptr_t*)((uintptr_t)car + kForzaCarDynOffset);
@@ -556,14 +590,20 @@ static void detour_forzacar_update(void* car, float dt, float b, uint32_t flag) 
         }
         g_link_ok.fetch_add(1, std::memory_order_relaxed);
 
-        int kind = g_forzacar_kind(car);
+        // Read where the kind function reads it rather than calling it: other mods hook that function
+        int kind = *(const int*)((uintptr_t)car + kForzaCarKindOffset);
+        if (kind < 0 || kind > 5) return;
         uint64_t now = GetTickCount64();
         remember_car((void*)dyn, pres, kind, now);
         if (kind == 0) {
             g_kind_player_dyn.store((void*)dyn);
             g_kind_player_pres.store(pres);
             g_kind_player_tick.store(now);
+            // Its car id (Data_Car.Id). Anything that can't be one is ignored
+            const int id = *(const int*)((uintptr_t)car + kForzaCarIdOffset);
+            if (id > 0 && id < 100000) g_player_car_id.store(id);
         }
+        if (kind <= 1) note_car_locators(car, kind, pres, now);
     } __except (EXCEPTION_EXECUTE_HANDLER) {
     }
 }
@@ -708,12 +748,9 @@ struct AiFx {
     std::atomic<uint64_t> since;   // when the current burst began
 };
 
-// Why bursts end, for the log's summary (physics thread counts, worker logs)
+// Why a burst ended, for the debug overlay's line for each Drivatar
 enum AiLetOff { kOffDry, kOffStopped, kOffAhead, kOffAir, kOffLong, kOffSlide, kOffCount };
 static const char* const kAiLetOffNames[kOffCount] = {"ran dry", "stopped", "too far ahead", "air", "long burst", "slide"};
-static std::atomic<uint32_t> g_ai_letoffs[kOffCount];
-static std::atomic<uint32_t> g_ai_bursts{0};
-static std::atomic<float> g_ai_burst_time{0.0f};   // seconds of all the bursts that ended
 static AiFx g_ai_fx[32];
 static const uint64_t kAiFxFreshMs = 150;
 static const float kAiNitroRange2 = 100.0f * 100.0f;   // how far ahead of the player a Drivatar may still boost
@@ -822,9 +859,6 @@ static void drivatar_nitro(void* dyn, uintptr_t pres, const float* fwd, float* v
         if (!launched || held_back || !grounded || align < 0.9f || spent) {
             const AiLetOff why = s->fuel <= 0.0f ? kOffDry : !launched ? kOffStopped : held_back ? kOffAhead
                                : !grounded ? kOffAir : spent ? kOffLong : kOffSlide;
-            g_ai_letoffs[why].fetch_add(1, std::memory_order_relaxed);
-            g_ai_bursts.fetch_add(1, std::memory_order_relaxed);
-            g_ai_burst_time.store(g_ai_burst_time.load() + s->burned);
             s->burning = false;
             s->depleted = s->fuel <= 0.0f;
             // A moment to settle, so a bump doesn't flicker it off and on
@@ -1110,9 +1144,134 @@ static void drive_backfire(uintptr_t pres, uint32_t mask) {
     }
 }
 
+// Exhaust tips from the car's own exhaust locators, with no backfire needed first (the way NitroSystem II, this mod's
+// FH3 port, found for FH3; FH2 has the same). The game builds its backfire message in a ForzaCar method (game+0xF7B310,
+// posting it at 0xF7B687): the car resolves its exhaust locators (vtable slot 58, game+0xF7DB40, carLocator_Exhaust_001
+// to 008), then for each of its eight weak pointers at ForzaCar+0x88 (0x10 apart: the object, then the control block
+// with the use count at +8) that's alive, the tip gets the locator's matrix (from its vtable slot 2) and its flag
+// (+0x40); the rest of the 0x60-byte tip stays zero, as the tip's constructor leaves it. The pointers stay empty until
+// the car's first backfire, so the mod has the car resolve them itself. Built on the cars' update thread, where the
+// game builds its own; sent from the backfire routine's thread.
+static const uintptr_t kForzaCarExhausts = 0x88;
+static const int kForzaCarResolveSlot = 58;
+static const uintptr_t kForzaCarResolveFn = 0xF7DB40;
+static const int kTipCount = 8, kTipSize = 0x60, kTipFlag = 0x40;
+static const uint64_t kLocatorTipsFreshMs = 250;
+
+struct LocatorTips {
+    SRWLOCK lock;          // zero is SRWLOCK_INIT
+    uintptr_t pres;        // the car's CarPresentation11
+    uint64_t tick;         // when they were last built
+    uint64_t resolved;     // when the car was last asked to resolve its locators
+    uint32_t mask;
+    uint8_t tips[kTipCount * kTipSize];
+};
+static LocatorTips g_loc_tips[40];
+
+// The car's live exhaust locators as the game's tips; which ones there are.
+static uint32_t read_locator_tips(const uint8_t* car, uint8_t* tips) {
+    memset(tips, 0, kTipCount * kTipSize);
+    uint32_t mask = 0;
+    const uintptr_t base = (uintptr_t)g_game_base;
+    for (int i = 0; i < kTipCount; ++i) {
+        void* obj = *(void* const*)(car + kForzaCarExhausts + 0x10 * i);
+        const uint8_t* ctrl = *(const uint8_t* const*)(car + kForzaCarExhausts + 0x10 * i + 8);
+        if (!obj || !ctrl || *(const volatile int32_t*)(ctrl + 8) <= 0) continue;
+        void* const* vt = *(void* const* const*)obj;
+        if ((uintptr_t)vt < base || (uintptr_t)vt >= base + 0x3A18000) continue;
+        typedef const float* (*LocatorMatrixFn)(void*);
+        const float* m = ((LocatorMatrixFn)vt[2])(obj);
+        if (!m) continue;
+        memcpy(tips + i * kTipSize, m, 0x40);
+        tips[i * kTipSize + kTipFlag] = 1;
+        mask |= 1u << i;
+    }
+    return mask;
+}
+
+// From ForzaCar::Update: the tips of the player's car while nitro burns, and of each Drivatar burning nitro.
+static void note_car_locators(void* car, int kind, uintptr_t pres, uint64_t now) {
+    if (!pres || !g_enabled.load()) return;
+    bool wanted = kind == 0 && g_nitro_active.load();
+    if (kind == 1 && g_drivatar_nitro.load())
+        for (const auto& fx : g_ai_fx)
+            if (fx.burning.load() && fx.pres.load() == pres) { wanted = true; break; }
+    if (!wanted) return;
+
+    // This thread is the only one that writes the table, so it can pick a slot without the lock
+    LocatorTips* s = &g_loc_tips[0];
+    for (auto& t : g_loc_tips) {
+        if (t.pres == pres) { s = &t; break; }
+        if (t.tick < s->tick) s = &t;
+    }
+    const bool same = s->pres == pres;
+    uint8_t tips[kTipCount * kTipSize];
+    __try {
+        const uint8_t* c = (const uint8_t*)car;
+        uint32_t mask = read_locator_tips(c, tips);
+        if (!mask && (!same || now - s->resolved >= 500)) {
+            // Not resolved yet: as the game does before its backfire message, by the car's own method (when it's the one
+            // expected, not hooked or moved)
+            void* const* vt = *(void* const* const*)car;
+            const uintptr_t base = (uintptr_t)g_game_base;
+            if ((uintptr_t)vt == base + FH2_GAME_FORZACAR_VTABLE && (uintptr_t)vt[kForzaCarResolveSlot] == base + kForzaCarResolveFn) {
+                typedef void (*ResolveFn)(void*);
+                ((ResolveFn)vt[kForzaCarResolveSlot])(car);
+                mask = read_locator_tips(c, tips);
+            }
+            AcquireSRWLockExclusive(&s->lock);
+            if (!same) { s->pres = pres; s->mask = 0; }
+            s->resolved = now;
+            ReleaseSRWLockExclusive(&s->lock);
+        }
+        AcquireSRWLockExclusive(&s->lock);
+        if (!same) { s->pres = pres; s->mask = 0; }
+        if (mask) {   // the game empties the pointers again now and then: keep the last good tips until they're back
+            s->mask = mask;
+            memcpy(s->tips, tips, sizeof tips);
+        }
+        s->tick = now;
+        ReleaseSRWLockExclusive(&s->lock);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+    }
+}
+
+// The tips built for this presentation lately, if there are any.
+static bool locator_tips(uintptr_t pres, uint64_t now, uint8_t* tips, uint32_t* mask) {
+    for (auto& t : g_loc_tips) {
+        if (t.pres != pres) continue;
+        AcquireSRWLockShared(&t.lock);
+        const bool ok = t.pres == pres && t.mask && now - t.tick <= kLocatorTipsFreshMs;
+        if (ok) {
+            memcpy(tips, t.tips, sizeof t.tips);
+            *mask = t.mask;
+        }
+        ReleaseSRWLockShared(&t.lock);
+        return ok;
+    }
+    return false;
+}
+
+// Runs the game's backfire routine for one presentation with tips built from the car's locators.
+static void drive_backfire_tips(uintptr_t pres, const uint8_t* tips, uint32_t mask) {
+    alignas(16) static uint8_t message[0x400];
+    __try {
+        memset(message, 0, sizeof(message));
+        memcpy(message, tips, kTipCount * kTipSize);   // no ref-counted pointers in them: nothing to take or give back
+        g_drive_pres.store(pres);
+        g_drive_mask.store(mask);
+        g_in_drive.store(true);
+        g_orig_backfire_entry((void*)pres, message, nullptr, nullptr);
+        g_in_drive.store(false);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        g_in_drive.store(false);
+    }
+}
+
 // The game only calls its backfire routine when the engine sim sends a backfire message (rare), so nitro
 // would get at most one flame. While nitro is on, call the routine for the player's presentation every few
-// frames ourselves, with the presentation's own tips as the message; the flame hook then flags the real tips.
+// frames ourselves: with tips from the car's exhaust locators (above), or, without them, with the presentation's
+// own tips as the message, the flame hook then flagging the tips the game's own backfires showed are real.
 // The same for each Drivatar burning nitro. Runs from the game's per-frame step, and only on the same thread
 // the game calls the routine on.
 static void drive_backfire_from_game_thread() {
@@ -1128,11 +1287,25 @@ static void drive_backfire_from_game_thread() {
     if (now - last_drive < 40) return;
     last_drive = now;
 
-    // Wait until the game has shown which tips the car really has (its own backfire events carry that).
-    // No flames until then rather than flames on slots the car doesn't have.
+    uint8_t tips[kTipCount * kTipSize];
+    uint32_t tip_mask = 0;
+    static bool logged_locators = false;
+
+    // The car's own exhaust locators; without them, wait until the game has shown which tips the car really has (its
+    // own backfire events carry that): no flames until then rather than flames on slots the car doesn't have.
+    const uintptr_t kind_pres = player_known_by_kind(now) ? g_kind_player_pres.load() : 0;
     uintptr_t pres = g_player_pres.load();
-    if (g_nitro_active.load() && pres && (g_real_mask.load() & 0xFF) != 0 && g_mask_pres.load() == pres &&
-        now - g_player_pres_tick.load() <= 120000 && is_player_pres(pres, now)) {
+    if (g_nitro_active.load() && kind_pres && locator_tips(kind_pres, now, tips, &tip_mask)) {
+        drive_backfire_tips(kind_pres, tips, tip_mask);
+        g_bf_driven.fetch_add(1, std::memory_order_relaxed);
+        if (!logged_locators) {
+            logged_locators = true;
+            char msg[160];
+            snprintf(msg, sizeof(msg), "Exhaust flames from the car's own exhaust locators (tips %02X): no first backfire needed.", tip_mask);
+            g_api->log(g_mod, msg);
+        }
+    } else if (g_nitro_active.load() && pres && (g_real_mask.load() & 0xFF) != 0 && g_mask_pres.load() == pres &&
+               now - g_player_pres_tick.load() <= 120000 && is_player_pres(pres, now)) {
         drive_backfire(pres, g_real_mask.load() & 0xFF);
         g_bf_driven.fetch_add(1, std::memory_order_relaxed);
     }
@@ -1141,9 +1314,14 @@ static void drive_backfire_from_game_thread() {
     for (auto& fx : g_ai_fx) {
         if (!fx.burning.load() || now - fx.tick.load() > kAiFxFreshMs) continue;
         uintptr_t ai_pres = fx.pres.load();
-        uint32_t mask = ai_pres ? learned_tips(ai_pres) : 0;
-        if (!mask) continue;
-        drive_backfire(ai_pres, mask);
+        if (!ai_pres) continue;
+        if (locator_tips(ai_pres, now, tips, &tip_mask)) {
+            drive_backfire_tips(ai_pres, tips, tip_mask);
+        } else {
+            uint32_t mask = learned_tips(ai_pres);
+            if (!mask) continue;
+            drive_backfire(ai_pres, mask);
+        }
         g_ai_flames.fetch_add(1, std::memory_order_relaxed);
     }
 }
@@ -1235,7 +1413,7 @@ static void* detour_view_chase(void* camera, float* out) {
     return r;
 }
 
-// Speedometer Gauge Hook: HUDStatusSpeedometer tick (RVA 0xAD6070 in Anthem)
+// Speedometer Gauge Hook: HUDStatusSpeedometer tick (RVA 0xAD6070 in Anthem, hooked at its call at 0x783E7E)
 // rcx = HUDStatusSpeedometer* speedo, xmm1 = float current_rpm
 typedef void (*SpeedoTickFn)(void* speedo, float rpm);
 static SpeedoTickFn g_orig_speedo_tick = nullptr;
@@ -1312,6 +1490,9 @@ static void detour_speedo_tick(void* speedo, float rpm) {
             tip_x = lead * kSegPitch + kSegWidth * seg_fill[lead] - kBarWidth;
         }
 
+        // The whole NOS bar (fill, glow, track and outline) is hidden in a car the nitro leaves alone (DisabledCars)
+        const float nos_shown = car_disabled(g_player_car_id.load()) ? 0.0f : 1.0f;
+
         // Drive the 4 NOS segments via RPMGaugeNumbers[17..20] and the glowing tip cap on [16].
         void* arr_wrapper = *(void**)((uintptr_t)speedo + 0x150);
         if (arr_wrapper) {
@@ -1337,7 +1518,7 @@ static void detour_speedo_tick(void* speedo, float rpm) {
                             float y;
                         } targets[5] = {
                             {17, s1, tip_x},                 // Segment 1 (Bottom); Y = digital glow offset
-                            {18, s2, 0.0f},                  // Segment 2
+                            {18, s2, nos_shown},             // Segment 2; Y = the NOS bar's opacity
                             {19, s3, 0.0f},                  // Segment 3
                             {20, s4, 0.0f},                  // Segment 4 (Top)
                             {16, glow_scale, leading_angle}  // Active Glowing Tip Cap (X=Ratio, Y=Angle)
@@ -1728,13 +1909,29 @@ static void play_nitro_sound(NitroSound& sound, DWORD flags) {
         PlaySoundW(reinterpret_cast<LPCWSTR>(sound.wav.data()), NULL, flags | SND_MEMORY | SND_NODEFAULT);
 }
 
+// Once the game's FMOD has the nitro sounds (below), the player's nitro plays through it too, from the player's
+// car like the Drivatars' (so it's heard from where the car is, from a drone say); until then, through PlaySound.
+// The worker only says when a burst starts and stops; the FMOD thread plays it.
+static std::atomic<bool> g_fmod_ready{false};
+static std::atomic<bool> g_player_boost_sound{false};   // the player's boost sound should be playing
+static std::atomic<uint32_t> g_player_stops{0};         // bursts ended, each with the stop sound
+
 static void start_nitro_audio() {
     PlaySoundW(NULL, NULL, 0);   // nothing may still be playing from a buffer that's about to be rebuilt
+    if (g_fmod_ready.load()) {
+        g_player_boost_sound.store(true);
+        return;
+    }
     play_nitro_sound(g_boost_sound, SND_ASYNC | SND_LOOP);
 }
 
 static void stop_nitro_audio() {
     PlaySoundW(NULL, NULL, 0);
+    g_player_boost_sound.store(false);
+    if (g_fmod_ready.load()) {
+        g_player_stops.fetch_add(1);
+        return;
+    }
     play_nitro_sound(g_stop_sound, SND_ASYNC);
 }
 
@@ -1765,6 +1962,8 @@ static const int kMaxAiVoices = 6;
 static const float kAiHearMin = 5.0f;     // full volume within this many metres...
 static const float kAiHearMax = 150.0f;   // ...fading to silence here (an inverse rolloff never gets there)
 static const float kAiFadeTime = 0.08f;   // fade in and out, rather than cutting the sound in mid-wave (a click)
+static const float kPlayerHearMin = 10.0f;    // the player's own: full volume from any of the car's cameras...
+static const float kPlayerHearMax = 250.0f;   // ...fading to silence here
 static const uint64_t kAiStaleMs = 400;   // a car the physics hasn't updated for this long has gone (or the game paused)
 
 struct FmodVec { float x, y, z; };
@@ -1793,7 +1992,6 @@ static void* g_ai_channel[32];           // same index as g_ai_fx
 static float g_ai_gain[32];              // each channel's fade, 0..1
 static bool g_ai_was_burning[32];        // the last update's fx.burning, to hear a burst end
 static std::atomic<int> g_ai_voices{0};
-static bool g_fmod_play_logged = false;
 
 template <typename Fn> static Fn fmod_fn(uintptr_t rva) {
     return reinterpret_cast<Fn>((uintptr_t)g_game_base + rva);
@@ -1839,10 +2037,12 @@ static bool fmod_listener(FmodVec* pos, FmodVec* vel) {
     }
 }
 
-// Plays `sound` at `pos`. It's given the listener's velocity, so it has no Doppler shift. The channel, or nullptr.
-// At the top priority: with the game's own sounds about, FMOD runs short of real voices and would otherwise keep
-// switching ours off and back on (heard as crackling); and with volume ramping, so volume changes are smooth.
-static void* fmod_play(void* sound, const FmodVec& pos, const FmodVec& vel, float volume) {
+// Plays `sound` at `pos`, at full volume within `full_within` metres and fading to silence at `silent_at`. It's given the
+// listener's velocity, so it has no Doppler shift. The channel, or nullptr. At the top priority: with the game's
+// own sounds about, FMOD runs short of real voices and would otherwise keep switching ours off and back on (heard
+// as crackling); and with volume ramping, so volume changes are smooth.
+static void* fmod_play(void* sound, const FmodVec& pos, const FmodVec& vel, float volume, float full_within = kAiHearMin,
+                       float silent_at = kAiHearMax) {
     __try {
         void* channel = nullptr;
         if (fmod_fn<FmodPlaySoundFn>(kFmodPlaySound)(g_fmod_core, sound, nullptr, true, &channel) != 0 || !channel)
@@ -1850,7 +2050,7 @@ static void* fmod_play(void* sound, const FmodVec& pos, const FmodVec& vel, floa
         fmod_fn<FmodSetPriorityFn>(kFmodSetPriority)(channel, 0);
         fmod_fn<FmodSetVolumeRampFn>(kFmodSetVolumeRamp)(channel, true);
         fmod_fn<FmodSet3DFn>(kFmodSet3DAttributes)(channel, &pos, &vel, nullptr);
-        fmod_fn<FmodMinMaxFn>(kFmodSet3DMinMax)(channel, kAiHearMin, kAiHearMax);
+        fmod_fn<FmodMinMaxFn>(kFmodSet3DMinMax)(channel, full_within, silent_at);
         fmod_fn<FmodSetVolumeFn>(kFmodSetVolume)(channel, volume);
         fmod_fn<FmodSetPausedFn>(kFmodSetPaused)(channel, false);
         return channel;
@@ -1923,9 +2123,10 @@ static void make_fmod_sounds() {
     int r2 = data ? fmod_create_wav((const char*)data, size, kFmodLoopOff, mix_rate, &sound, &g_fmod_stop_gain) : -1;
     if (r2 == 0) g_fmod_stop = sound;
 
-    snprintf(msg, sizeof(msg), "Drivatar nitro sound: boost %s (%d), stop %s (%d); FMOD mixes at %d Hz.",
+    snprintf(msg, sizeof(msg), "Nitro sound in the game's audio: boost %s (%d), stop %s (%d); FMOD mixes at %d Hz.",
              g_fmod_boost ? "ready" : "failed", r, g_fmod_stop ? "ready" : "failed", r2, mix_rate);
     g_api->log(g_mod, msg);
+    g_fmod_ready.store(g_fmod_boost && g_fmod_stop);
 }
 
 // Where a Drivatar's sound goes: its car as drawn (the presentation's position), which moves in step with the
@@ -1995,14 +2196,6 @@ static void drivatar_sound_tick() {
             channel = fmod_play(g_fmod_boost, pos, lvel, 0.0f);
             if (!channel) continue;
             g_ai_voices.fetch_add(1);
-            if (!g_fmod_play_logged) {
-                // The sound is placed in the physics' world: the listener should be near the player's car
-                g_fmod_play_logged = true;
-                char msg[200];
-                snprintf(msg, sizeof(msg), "Drivatar nitro sound at %.0f %.0f %.0f; listener at %.0f %.0f %.0f, your car at %.0f %.0f %.0f.",
-                         pos.x, pos.y, pos.z, lpos.x, lpos.y, lpos.z, g_player_pos[0], g_player_pos[1], g_player_pos[2]);
-                g_api->log(g_mod, msg);
-            }
         }
         if (!channel) continue;
 
@@ -2017,16 +2210,84 @@ static void drivatar_sound_tick() {
     }
 }
 
+// Where the player's car is: its presentation's position (it moves in step with the listener, see ai_sound_pos),
+// else the position the world manager keeps for it.
+static bool player_sound_pos(FmodVec* out) {
+    const uint64_t now = GetTickCount64();
+    const uintptr_t pres = player_known_by_kind(now) ? g_kind_player_pres.load() : g_player_pres.load();
+    if (pres) {
+        __try {
+            const float* p = (const float*)(pres + kPresPosOffset);
+            if (std::isfinite(p[0] + p[1] + p[2])) {
+                *out = FmodVec{p[0], p[1], p[2]};
+                return true;
+            }
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+        }
+    }
+    if (now - g_player_pos_tick.load() > 500) return false;
+    *out = FmodVec{g_player_pos[0], g_player_pos[1], g_player_pos[2]};
+    return true;
+}
+
+// The player's boost and stop sounds, at the player's car. A burst starts at full volume (volume ramping takes the
+// edge off), so it comes in with the button; it fades out when it ends.
+static void player_sound_tick() {
+    static void* channel = nullptr;
+    static float gain = 0.0f;
+    static uint32_t seen_stops = g_player_stops.load();
+    static uint64_t last_tick = 0;
+    const uint64_t now = GetTickCount64();
+    const float step = (std::min)(0.1f, (now - last_tick) * 0.001f) / kAiFadeTime;
+    last_tick = now;
+
+    const float volume = g_sound_volume.load();
+    FmodVec lpos{}, lvel{}, pos{};
+    const bool heard = g_enabled.load() && volume > 0.0f && fmod_listener(&lpos, &lvel) && player_sound_pos(&pos);
+    const bool want = heard && g_player_boost_sound.load();
+
+    const uint32_t stops = g_player_stops.load();
+    if (stops != seen_stops) {
+        seen_stops = stops;
+        if (heard && g_fmod_stop)
+            fmod_play(g_fmod_stop, pos, lvel, volume * g_fmod_stop_gain, kPlayerHearMin, kPlayerHearMax);
+    }
+
+    static bool wanted = false;
+    if (want && !wanted && channel) {   // a new burst while the last one fades: from its start again
+        fmod_stop(channel);
+        channel = nullptr;
+    }
+    wanted = want;
+    if (want && !channel && g_fmod_boost) {
+        channel = fmod_play(g_fmod_boost, pos, lvel, volume * g_fmod_boost_gain, kPlayerHearMin, kPlayerHearMax);
+        gain = 1.0f;
+    }
+    if (!channel) return;
+    gain = want ? 1.0f : (std::max)(0.0f, gain - step);
+    if (gain > 0.0f) {
+        if (heard) fmod_move(channel, pos, lvel, volume * gain * g_fmod_boost_gain);
+        else fmod_move(channel, lpos, lvel, 0.0f);   // nowhere to put it: silent while it fades
+    } else {
+        fmod_stop(channel);
+        channel = nullptr;
+    }
+}
+
 static int detour_studio_update(void* studio) {
     int r = g_orig_studio_update ? g_orig_studio_update(studio) : 0;
     if (!g_fmod_core && studio) {
         void* core = nullptr;
         if (fmod_low_level(studio, &core) == 0 && core) {
             g_fmod_core = core;
-            g_api->log(g_mod, "FMOD found (Drivatar nitro sound plays through the game's own audio).");
+            g_api->log(g_mod, "FMOD found (nitro sound plays through the game's own audio, from the cars).");
         }
     }
-    if (g_fmod_core) drivatar_sound_tick();
+    if (g_fmod_core) {
+        if (!g_fmod_sounds_made) make_fmod_sounds();
+        player_sound_tick();
+        drivatar_sound_tick();
+    }
     return r;
 }
 
@@ -2180,11 +2441,16 @@ static void nitro_worker_thread() {
     // ForzaCar's per-frame update, to learn each car's kind (the player's, a Drivatar, traffic). The kind
     // function is called, so check it's what the game has on disk first.
     const char* game = (const char*)base;
-    if (memcmp(game + FH2_GAME_FORZACAR_KIND, FH2_GAME_FORZACAR_KIND_BYTES, sizeof FH2_GAME_FORZACAR_KIND_BYTES - 1) == 0) {
-        g_forzacar_kind = (ForzaCarKindFn)(game + FH2_GAME_FORZACAR_KIND);
+    // The kind function's bytes say where a car keeps its kind. Another mod may have hooked that function (CCBR
+    // does), so a jump there instead is fine too: the field is read directly, and the platform names the same one.
+    const bool kind_fn_stock = memcmp(game + FH2_GAME_FORZACAR_KIND, FH2_GAME_FORZACAR_KIND_BYTES, sizeof FH2_GAME_FORZACAR_KIND_BYTES - 1) == 0;
+    const bool kind_fn_hooked = (unsigned char)game[FH2_GAME_FORZACAR_KIND] == 0xE9;
+    if (kind_fn_stock || kind_fn_hooked) {
+        if (kind_fn_hooked) g_api->log(g_mod, "ForzaCar's kind function is hooked by another mod; reading the kind from the car itself.");
         FH2Hook* hook_car = g_api->hook_function(g_mod, "ForzaCar::Update", (void*)(game + FH2_GAME_FORZACAR_UPDATE),
                                                  (void*)detour_forzacar_update, (void**)&g_orig_forzacar_update);
         if (hook_car && g_api->enable_hooks(g_mod, hook_car)) {
+            g_forzacar_hooked = true;
             g_api->log(g_mod, "ForzaCar::Update hooked (tells the player's car from Drivatars and traffic).");
         } else {
             g_api->log(g_mod, "Could not hook ForzaCar::Update; the player's car is found by position and Drivatars get no nitro.");
@@ -2221,9 +2487,12 @@ static void nitro_worker_thread() {
         g_api->log(g_mod, "Failed to create CarPresentation11 backfire hook.");
     }
 
-    // Hook HUDStatusSpeedometer gauge update (RVA 0xAD6070) for dynamic NOS gauge fuel display
-    void* speedo_call = (void*)((uintptr_t)base + 0xad6070);
-    FH2Hook* hook_sp = g_api->hook_function(g_mod, "HUDStatusSpeedometer::UpdateGauges", speedo_call, (void*)detour_speedo_tick, (void**)&g_orig_speedo_tick);
+    // Hook HUDStatusSpeedometer gauge update (RVA 0xAD6070) for dynamic NOS gauge fuel display. Through its only
+    // caller (the call at 0x783E7E; nothing else calls it or holds its address) rather than its first bytes: other
+    // mods (the Knight Rider car's speedometer) patch the function itself with hooks of their own, and two hooks
+    // at the same entry break each other.
+    void* speedo_call = (void*)((uintptr_t)base + 0x783E7E);
+    FH2Hook* hook_sp = g_api->hook_call(g_mod, "HUDStatusSpeedometer::UpdateGauges", speedo_call, (void*)detour_speedo_tick, (void**)&g_orig_speedo_tick);
     if (hook_sp) {
         if (g_api->enable_hooks(g_mod, hook_sp)) {
             g_api->log(g_mod, "HUDStatusSpeedometer hook enabled for dynamic NOS gauge decrease/refill!");
@@ -2270,6 +2539,11 @@ static void nitro_worker_thread() {
         // Only run while the player is actually driving: car physics is simulating (not Pause Menu,
         // Map or Loading) and the HUD speedometer is ticking (not Garage or a car meet lobby).
         uint64_t now_ms = GetTickCount64();
+        static uint64_t lang_checked = 0;
+        if (now_ms - lang_checked >= 2000) {   // the game's language, for the Mods page next time
+            lang_checked = now_ms;
+            lang_poll(g_game_base);
+        }
         bool physics_active = (now_ms - g_last_physics_tick.load()) < 200;
         bool driving = physics_active && (now_ms - g_last_speedo_tick.load()) < 200;
 
@@ -2278,6 +2552,26 @@ static void nitro_worker_thread() {
 
         if (!driving) {
             // Nothing is simulated: no nitro, and the tank neither drains nor recharges.
+            if (g_nitro_active.load()) {
+                g_nitro_active.store(false);
+                g_current_boost.store(1.0f);
+                set_rumble(0, 0);
+                stop_nitro_audio();
+                active_duration = 0.0f;
+            }
+            continue;
+        }
+
+        // A car in DisabledCars: no nitro in it at all, the button is its own mod's
+        const int car_id = g_player_car_id.load();
+        static int logged_car = 0;
+        if (car_id != logged_car) {
+            logged_car = car_id;
+            snprintf(log_buf, sizeof(log_buf), car_disabled(car_id) ? "Your car: id %d, in DisabledCars: no nitro in it." : "Your car: id %d.",
+                     car_id);
+            g_api->log(g_mod, log_buf);
+        }
+        if (car_disabled(car_id)) {
             if (g_nitro_active.load()) {
                 g_nitro_active.store(false);
                 g_current_boost.store(1.0f);
@@ -2304,25 +2598,6 @@ static void nitro_worker_thread() {
                 snprintf(log_buf, sizeof(log_buf), "Car kinds unavailable (presentation vtable game+0x%llX, simulation vtable game+0x%llX); "
                          "finding the player's car by position, no Drivatar nitro.",
                          (unsigned long long)g_link_bad_pres_vt.load(), (unsigned long long)g_link_bad_dyn_vt.load());
-                g_api->log(g_mod, log_buf);
-            }
-        }
-
-        // How the Drivatars used their nitro, once a minute while they do
-        static uint64_t ai_report_tick = 0;
-        if (ai_report_tick == 0) ai_report_tick = now_ms;
-        if (now_ms - ai_report_tick >= 60000) {
-            ai_report_tick = now_ms;
-            const uint32_t bursts = g_ai_bursts.exchange(0);
-            const float total = g_ai_burst_time.exchange(0.0f);
-            if (bursts) {
-                int n = snprintf(log_buf, sizeof(log_buf), "Drivatar nitro, last minute: %u bursts, %.1f s on average; let off for",
-                                 bursts, total / bursts);
-                for (int i = 0; i < kOffCount && n > 0 && n < (int)sizeof(log_buf); ++i) {
-                    const uint32_t c = g_ai_letoffs[i].exchange(0);
-                    if (c) n += snprintf(log_buf + n, sizeof(log_buf) - n, " %s %u,", kAiLetOffNames[i], c);
-                }
-                if (n > 0 && n < (int)sizeof(log_buf)) log_buf[n - 1] = '.';
                 g_api->log(g_mod, log_buf);
             }
         }
@@ -2610,20 +2885,29 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
     FH2ModInfo info{};
     info.size             = sizeof(info);
     info.name             = "NitroSystem";
-    info.version          = "1.5.0";
+    info.version          = FNFNITRO_VERSION;
     info.github_repo      = "qiangqiang101/NitroSystem";
     info.platform_version = FH2MOD_PLATFORM_VERSION;
     info.check_updates    = 1;
-    info.description      = "Fast & Furious Nitro system ported to Forza Horizon 2 (All Cars - LB to activate)";
     info.offline_only     = 1;
     
+    // The ini, and the language the Mods page shows (the one the game starts in), before any text is used
+    init_paths();
+    lang_init(g_ini_path, g_api->azimuth_dir);
+    info.description = tr("Fast & Furious nitro for every car in Forza Horizon 2, with exhaust flames, sound and a NOS gauge. "
+                          "Hold the Nitro Button (LB unless you change it) to boost.");
+
     g_mod = api->register_mod(&info);
     if (!g_mod) return 1;
 
     api->log(g_mod, "NitroSystem initializing (LB to boost)...");
+    {
+        char lang_msg[64];
+        snprintf(lang_msg, sizeof(lang_msg), "Mods page language: %s", lang_code());
+        api->log(g_mod, lang_msg);
+    }
 
-    // Initialize paths & load persistent settings from FnFNitro.ini
-    init_paths();
+    // Load persistent settings from FnFNitro.ini
     load_config();
     apply_hud_theme();   // before the game first reads the HUD files
     apply_backfire_effect();
@@ -2634,8 +2918,10 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
         FH2Setting s_enable{};
         s_enable.size        = sizeof(s_enable);
         s_enable.key         = "NitroEnabled";
-        s_enable.label       = "Nitro System (LB)";
-        s_enable.description = "Enable or disable Fast & Furious Nitro. Press LB while driving to boost!";
+        static std::string enable_label;
+        enable_label         = std::string(tr("Nitro System")) + " (" + k_buttons[button_index()].label + ")";
+        s_enable.label       = enable_label.c_str();
+        s_enable.description = tr("Turns the Fast & Furious nitro on or off. Hold the Nitro Button while driving to boost.");
         s_enable.value       = g_enabled.load() ? 1 : 0;
         s_enable.on_change   = on_setting_changed;
         api->add_setting(g_mod, &s_enable);
@@ -2643,8 +2929,8 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
         FH2Setting s_debug{};
         s_debug.size        = sizeof(s_debug);
         s_debug.key         = "DebugOverlay";
-        s_debug.label       = "Nitro Debug Overlay";
-        s_debug.description = "Draws nitro and flame debug info over the game (needs borderless/windowed mode).";
+        s_debug.label       = tr("Nitro Debug Overlay");
+        s_debug.description = tr("Draws nitro and flame debug info over the game (needs borderless/windowed mode).");
         s_debug.value       = g_debug.load() ? 1 : 0;
         s_debug.on_change   = on_setting_changed;
         api->add_setting(g_mod, &s_debug);
@@ -2652,8 +2938,8 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
         FH2Setting s_backfire{};
         s_backfire.size          = sizeof(s_backfire);
         s_backfire.key           = "BackfireOnAllCars";
-        s_backfire.label         = "Backfire on All Cars";
-        s_backfire.description   = "Lets every car backfire, which the nitro exhaust flames need. Off leaves the game's own backfire settings alone. Takes effect after a restart.";
+        s_backfire.label         = tr("Backfire on All Cars");
+        s_backfire.description   = tr("Lets every car backfire, which the nitro exhaust flames need. Off leaves the game's own backfire settings alone. Takes effect after a restart.");
         s_backfire.value         = g_backfire_all_cars.load() ? 1 : 0;
         s_backfire.needs_restart = 1;
         s_backfire.on_change     = on_setting_changed;
@@ -2662,8 +2948,8 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
         FH2Setting s_refill{};
         s_refill.size        = sizeof(s_refill);
         s_refill.key         = "RefillOnRaceStart";
-        s_refill.label       = "Refill Nitro on Race Start";
-        s_refill.description = "Fills the nitro tank when a race starts, you quit one, you change car or you fast travel.";
+        s_refill.label       = tr("Refill Nitro on Race Start");
+        s_refill.description = tr("Fills the nitro tank when a race starts, you quit one, you change car or you fast travel.");
         s_refill.value       = g_refill_on_start.load() ? 1 : 0;
         s_refill.on_change   = on_setting_changed;
         api->add_setting(g_mod, &s_refill);
@@ -2671,8 +2957,8 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
         FH2Setting s_rewind{};
         s_rewind.size        = sizeof(s_rewind);
         s_rewind.key         = "RefundOnRewind";
-        s_rewind.label       = "Refund Nitro on Rewind";
-        s_rewind.description = "Rewinding gives back the nitro you used since the point you rewind to.";
+        s_rewind.label       = tr("Refund Nitro on Rewind");
+        s_rewind.description = tr("Rewinding gives back the nitro you used since the point you rewind to.");
         s_rewind.value       = g_refund_on_rewind.load() ? 1 : 0;
         s_rewind.on_change   = on_setting_changed;
         api->add_setting(g_mod, &s_rewind);
@@ -2680,8 +2966,8 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
         FH2Setting s_rumble{};
         s_rumble.size        = sizeof(s_rumble);
         s_rumble.key         = "Rumble";
-        s_rumble.label       = "Nitro Controller Rumble";
-        s_rumble.description = "Rumbles the controller while Nitro is active. The game's own rumble isn't affected.";
+        s_rumble.label       = tr("Nitro Controller Rumble");
+        s_rumble.description = tr("Rumbles the controller while Nitro is active. The game's own rumble isn't affected.");
         s_rumble.value       = g_rumble.load() ? 1 : 0;
         s_rumble.on_change   = on_setting_changed;
         api->add_setting(g_mod, &s_rumble);
@@ -2689,10 +2975,10 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
         FH2Setting s_drivatar{};
         s_drivatar.size        = sizeof(s_drivatar);
         s_drivatar.key         = "DrivatarNitro";
-        s_drivatar.label       = "Drivatar Nitro";
-        s_drivatar.description = "Drivatars use nitro too, whenever they can (not before the race starts), from "
-                                 "a tank with twice your capacity and recharge, with flames and sound. Not once they're over "
-                                 "100 m ahead of you, so you can catch up. Applies right away.";
+        s_drivatar.label       = tr("Drivatar Nitro");
+        s_drivatar.description = tr("Drivatars use nitro too, whenever they can (not before the race starts), from "
+                                    "a tank with twice your capacity and recharge, with flames and sound. Not once they're over "
+                                    "100 m ahead of you, so you can catch up. Applies right away.");
         s_drivatar.value       = g_drivatar_nitro.load() ? 1 : 0;
         s_drivatar.on_change   = on_setting_changed;
         api->add_setting(g_mod, &s_drivatar);
@@ -2701,15 +2987,18 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
         // picked by number (listed in the description).
         static const char* button_choices[k_button_count];
         for (int i = 0; i < k_button_count; ++i) button_choices[i] = k_buttons[i].label;
-        static const char* const theme_choices[] = {"Original", "Fast & Furious"};
+        static const char* theme_choices[] = {tr("Original"), "Fast & Furious"};   // a name: the same in every language
         const bool choices = api->api_version >= 9;
 
         if (choices) {
             FH2Setting s_button{};
             s_button.size         = sizeof(s_button);
             s_button.key          = "NitroButton";
-            s_button.label        = "Nitro Button";
-            s_button.description  = "Which button burns nitro. Pick one the game doesn't use while driving. Applies right away.";
+            s_button.label        = tr("Nitro Button");
+            static std::string button_desc;
+            button_desc           = std::string(tr("Which button burns nitro.")) + " " +
+                                    tr("Pick one the game doesn't use while driving. Applies right away.");
+            s_button.description  = button_desc.c_str();
             s_button.kind         = FH2_SETTING_CHOICE;
             s_button.choices      = button_choices;
             s_button.choice_count = k_button_count;
@@ -2720,8 +3009,8 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
             FH2Setting s_hud{};
             s_hud.size          = sizeof(s_hud);
             s_hud.key           = "HudTheme";
-            s_hud.label         = "HUD Theme";
-            s_hud.description   = "Original: the game's HUD with a yellow NOS bar. Fast & Furious: cyan NOS bar, gears and assist icons.";
+            s_hud.label         = tr("HUD Theme");
+            s_hud.description   = tr("Original: the game's HUD with a yellow NOS bar. Fast & Furious: cyan NOS bar, gears and assist icons.");
             s_hud.kind          = FH2_SETTING_CHOICE;
             s_hud.choices       = theme_choices;
             s_hud.choice_count  = 2;
@@ -2733,10 +3022,12 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
             FH2Setting s_button{};
             s_button.size          = sizeof(s_button);
             s_button.key           = "NitroButton";
-            s_button.label         = "Nitro Button";
-            s_button.description   = "1 LB, 2 RB, 3 A, 4 B, 5 X, 6 Y, 7 LS click, 8 RS click, 9 D-Pad Up, 10 D-Pad Down, "
-                                     "11 D-Pad Left, 12 D-Pad Right, 13 Back, 14 Start, 15 LT, 16 RT. Pick one the game "
-                                     "doesn't use while driving. Applies right away.";
+            s_button.label         = tr("Nitro Button");
+            static std::string button_desc;   // the buttons by their names, the same in every language
+            button_desc            = std::string("1 LB, 2 RB, 3 A, 4 B, 5 X, 6 Y, 7 LS click, 8 RS click, 9 D-Pad Up, "
+                                                 "10 D-Pad Down, 11 D-Pad Left, 12 D-Pad Right, 13 Back, 14 Start, 15 LT, 16 RT. ") +
+                                     tr("Pick one the game doesn't use while driving. Applies right away.");
+            s_button.description   = button_desc.c_str();
             s_button.kind          = FH2_SETTING_SLIDER;
             s_button.min           = 1.0f;
             s_button.max           = (float)k_button_count;
@@ -2750,8 +3041,8 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
             FH2Setting s_hud{};
             s_hud.size          = sizeof(s_hud);
             s_hud.key           = "HudTheme";
-            s_hud.label         = "HUD Theme";
-            s_hud.description   = "1 Original (yellow NOS bar), 2 Fast & Furious (cyan NOS bar, gears and assist icons).";
+            s_hud.label         = tr("HUD Theme");
+            s_hud.description   = tr("1 Original (yellow NOS bar), 2 Fast & Furious (cyan NOS bar, gears and assist icons).");
             s_hud.kind          = FH2_SETTING_SLIDER;
             s_hud.min           = 1.0f;
             s_hud.max           = 2.0f;
@@ -2769,8 +3060,8 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
             FH2Setting s_torque{};
             s_torque.size          = sizeof(s_torque);
             s_torque.key           = "TorqueScale";
-            s_torque.label         = "Nitro Boost Multiplier";
-            s_torque.description   = "Multiplies forward acceleration while Nitro is active (Spire default: 1.6x).";
+            s_torque.label         = tr("Nitro Boost Multiplier");
+            s_torque.description   = tr("Multiplies forward acceleration while Nitro is active (Spire default: 1.6x).");
             s_torque.kind          = FH2_SETTING_SLIDER;
             s_torque.min           = 1.0f;
             s_torque.max           = 2.0f;
@@ -2784,8 +3075,8 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
             FH2Setting s_dur{};
             s_dur.size          = sizeof(s_dur);
             s_dur.key           = "Duration";
-            s_dur.label         = "Nitro Tank Capacity (sec)";
-            s_dur.description   = "Total seconds of continuous boost available in a full tank (Spire default: 20s).";
+            s_dur.label         = tr("Nitro Tank Capacity (sec)");
+            s_dur.description   = tr("Total seconds of continuous boost available in a full tank (Spire default: 20s).");
             s_dur.kind          = FH2_SETTING_SLIDER;
             s_dur.min           = 5.0f;
             s_dur.max           = 60.0f;
@@ -2799,8 +3090,8 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
             FH2Setting s_buildup{};
             s_buildup.size          = sizeof(s_buildup);
             s_buildup.key           = "BuildupTime";
-            s_buildup.label         = "Nitro Buildup Time (sec)";
-            s_buildup.description   = "Time taken to ramp up to full boost torque (Spire default: 0.5s).";
+            s_buildup.label         = tr("Nitro Buildup Time (sec)");
+            s_buildup.description   = tr("Time taken to ramp up to full boost torque (Spire default: 0.5s).");
             s_buildup.kind          = FH2_SETTING_SLIDER;
             s_buildup.min           = 0.1f;
             s_buildup.max           = 2.0f;
@@ -2814,8 +3105,8 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
             FH2Setting s_recharge{};
             s_recharge.size          = sizeof(s_recharge);
             s_recharge.key           = "RechargeRate";
-            s_recharge.label         = "Nitro Recharge Rate";
-            s_recharge.description   = "Seconds of nitro restored per second while not boosting.";
+            s_recharge.label         = tr("Nitro Recharge Rate");
+            s_recharge.description   = tr("Seconds of nitro restored per second while not boosting.");
             s_recharge.kind          = FH2_SETTING_SLIDER;
             s_recharge.min           = 0.0f;
             s_recharge.max           = 1.0f;
@@ -2829,8 +3120,8 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
             FH2Setting s_volume{};
             s_volume.size          = sizeof(s_volume);
             s_volume.key           = "SoundVolume";
-            s_volume.label         = "Nitro Sound Volume";
-            s_volume.description   = "Volume of the boost and stop sounds. The game's own volume sliders don't change them.";
+            s_volume.label         = tr("Nitro Sound Volume");
+            s_volume.description   = tr("Volume of the boost and stop sounds. The game's own volume sliders don't change them.");
             s_volume.kind          = FH2_SETTING_SLIDER;
             s_volume.min           = 0.0f;
             s_volume.max           = 1.0f;
@@ -2844,8 +3135,8 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
             FH2Setting s_ai_volume{};
             s_ai_volume.size          = sizeof(s_ai_volume);
             s_ai_volume.key           = "DrivatarSoundVolume";
-            s_ai_volume.label         = "Drivatar Nitro Volume";
-            s_ai_volume.description   = "Volume of the Drivatars' nitro, heard from their cars (with Drivatar Nitro on). 0 silences it.";
+            s_ai_volume.label         = tr("Drivatar Nitro Volume");
+            s_ai_volume.description   = tr("Volume of the Drivatars' nitro, heard from their cars (with Drivatar Nitro on). 0 silences it.");
             s_ai_volume.kind          = FH2_SETTING_SLIDER;
             s_ai_volume.min           = 0.0f;
             s_ai_volume.max           = 1.0f;
@@ -2859,8 +3150,8 @@ FH2MOD_EXPORT int fh2mod_init(const FH2ModApi* api) {
             FH2Setting s_shake{};
             s_shake.size          = sizeof(s_shake);
             s_shake.key           = "CameraShake";
-            s_shake.label         = "Nitro Camera Shake";
-            s_shake.description   = "How much the camera shakes while Nitro is active, in the driver, hood, bumper and chase views. 0 turns it off.";
+            s_shake.label         = tr("Nitro Camera Shake");
+            s_shake.description   = tr("How much the camera shakes while Nitro is active, in the driver, hood, bumper and chase views. 0 turns it off.");
             s_shake.kind          = FH2_SETTING_SLIDER;
             s_shake.min           = 0.0f;
             s_shake.max           = 1.0f;
