@@ -1,8 +1,8 @@
 # Nitro System for FH2
 
-Fast & Furious style **nitro** for **Forza Horizon 2** (Xbox One build on PC via the Azimuth launcher), built on the **FH2 Mod Platform**.
+Fast & Furious style **NOS** for **Forza Horizon 2** (Xbox One build on PC via the Azimuth launcher), built on the **FH2 Mod Platform**.
 
-Hold **LB** (or any button you pick) to burn nitro: your car gets a strong push, blue flames shoot from your tailpipes, the speedometer gets a draining NOS gauge with a glowing tip, the nitro roars, the camera shakes and the controller rumbles.
+Buy a **NOS Kit** for your car in the garage, then hold **LB** (or any button you pick) to burn NOS: your car gets a strong push, blue flames shoot from your tailpipes, the speedometer gets a draining NOS gauge with a glowing tip, the screen edges glow blue with speed lines flying past, the NOS roars, the camera shakes and the controller rumbles.
 
 <img width="1919" height="1079" alt="Screenshot 2026-10-22 013921" src="https://github.com/user-attachments/assets/15887438-8606-4627-bd2c-25c6a99baa3a" />
 <img width="1919" height="1079" alt="Screenshot 2026-10-22 013609" src="https://github.com/user-attachments/assets/134fec85-6992-4515-b108-90b2545a1702" />
@@ -13,37 +13,54 @@ Hold **LB** (or any button you pick) to burn nitro: your car gets a strong push,
 
 ## Features
 
-- **Nitro on LB, or any button you choose.** Hold the left shoulder button on any connected controller, or remap it to another button, d-pad direction or trigger (see **Nitro Button** below). There is no keyboard key.
-- **A real tank.** Nitro drains while you hold the nitro button and recharges when you let go. Run it dry and it locks out until you release the button and have recharged about 2 seconds.
+- **NOS on LB, or any button you choose.** Hold the left shoulder button on any connected controller, or remap it to another button, d-pad direction or trigger (see **NOS Button** below). There is no keyboard key.
+- **A real tank.** NOS drains while you hold the NOS button and recharges when you let go. Run it dry and it locks out until you release the button and have recharged about 2 seconds.
 - **Buildup curve.** The push ramps up over a short time instead of snapping on.
 - **Stays on the road.** The push follows the horizontal direction of the car's nose, so a pitched-up nose doesn't launch you into the sky, and nothing is applied while the car is airborne (or for a moment after landing).
-- **Only while driving.** Nitro only works while the game is simulating your car and the speedometer HUD is running, so it stays off in the pause menu, the map and loading screens. The tank doesn't drain or recharge while the game is paused. (Garage and car meet lobbies should also stay off, since the speedometer isn't active there.)
-- **NOS gauge on the speedometer.** Both the **analog** and the **digital** speedometers get a four-segment NOS bar that drains as you use nitro, with a glowing tip that follows the leading edge of the fill.
-- **Exhaust flames.** Blue flames come out of your car's real tailpipes while nitro is held, from the first second (the mod drives the game's own backfire effect, at the exhaust positions the car's own model gives).
+- **Only while driving.** NOS only works while the game is simulating your car and the speedometer HUD is running, so it stays off in the pause menu, the map and loading screens. The tank doesn't drain or recharge while the game is paused. (Garage and car meet lobbies should also stay off, since the speedometer isn't active there.)
+- **NOS Kit garage upgrade.** NOS is a part you buy per owned car: **Garage > Upgrades > Custom upgrade > Engine > NOS Kit**. The stage sets the size of the tank and how fast it recharges; the push is the same for every stage (**NOS Boost Multiplier**). A car without the kit has no NOS, and its NOS gauge frame is hidden. Turn off **Require NOS Kit** to give every car NOS again, with the **NOS Tank Capacity** and **NOS Recharge Rate** settings. (From NitroSystem II.)
+
+  | Stage | Tank | Recharge | Price |
+  |---|---|---|---|
+  | Stock | no NOS | | free |
+  | Stage 1 NOS | 5 s | 0.20 s per second | 3 000 CR |
+  | Stage 2 NOS | 10 s | 0.25 s per second | 6 000 CR |
+  | Stage 3 NOS | 20 s | 0.30 s per second | 12 000 CR |
+  | Stage 4 NOS | 30 s | 0.40 s per second | 24 000 CR |
+
+  Drivatars (with **Drivatar NOS** on) get twice the tank and twice the recharge of the kit on the car you're driving, and no NOS while your car has no kit.
+- **Screen effects.** While NOS burns the field of view widens, a pulsing blue vignette glows at the screen edges and blue speed lines fly out from the middle, faster the faster you go. Each can be turned off. (From NitroSystem II.)
+- **NOS gauge on the speedometer.** Both the **analog** and the **digital** speedometers get a four-segment NOS bar that drains as you use NOS, with a glowing tip that follows the leading edge of the fill.
+- **Exhaust flames.** Blue flames come out of your car's real tailpipes while NOS is held, from the first second (the mod drives the game's own backfire effect, at the exhaust positions the car's own model gives).
 - **Sound, rumble and camera shake.** A boost sound that kicks in and then holds for as long as the tank lasts, and a stop sound, both played by the game's own audio from your car (fly a drone away and they fade with distance) (built into the DLL; put your own `nos_boost.wav` and `nos_stop.wav` in an `FnFNitro` folder next to `azimuth.exe` to replace them; your own boost sound loops from its start), a rumble that ramps up with the boost, and a camera shake while it burns. Each has its own setting below.
-- **In-game settings.** Everything below is on **Pause > Settings > MODS**, in the game's language: Brazilian Portuguese, Dutch, French, German, Italian, Japanese, Korean, Polish, Russian, Spanish (Spain and Mexico) and Traditional Chinese. Czech and Hungarian stay English, as the game's own text does there. The Mods page is built before the game has picked its language, so it uses the one the game had the last time it ran (the very first time, Azimuth's Language setting): after you change the game's language it follows one launch later.
-- **Works alongside car mods.** The **Knight Rider** car and other mods that patch the speedometer or the car's kind run alongside it, and cars listed in `DisabledCars` (the Knight Rider car by default) get no nitro and no NOS gauge, so their own mod has the button.
+- **In-game settings.** Everything below is on **Pause > Settings > MODS**, and the NOS Kit's names in the garage, are in the game's language: Brazilian Portuguese, Dutch, French, German, Italian, Japanese, Korean, Polish, Russian, Spanish (Spain and Mexico) and Traditional Chinese. Czech and Hungarian stay English, as the game's own text does there. The Mods page is built before the game has picked its language, so it uses the one the game had the last time it ran (the very first time, Azimuth's Language setting): after you change the game's language it follows one launch later.
+- **Works alongside car mods.** The **Knight Rider** car and other mods that patch the speedometer or the car's kind run alongside it, and cars listed in `DisabledCars` (the Knight Rider car by default) get no NOS and no NOS gauge, so their own mod has the button. With **ANNA Drone Mode** installed, NOS is off while the drone flies. Other mods can switch NOS off too (see **For mod authors** below).
 
 ### In-game settings
 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
-| Nitro System | On / Off | On | Turns nitro on or off. |
-| Nitro Button | LB, RB, A, B, X, Y, LS Click, RS Click, D-Pad, Back, Start, LT, RT | LB | Which button burns nitro. Applies right away. |
-| Nitro Debug Overlay | On / Off | Off | Draws debug info over the game (see below). |
+| Nitro System | On / Off | On | Turns NOS on or off (the mod's name stays Nitro System). Off also hides the NOS gauge. |
+| NOS Button | LB, RB, A, B, X, Y, LS Click, RS Click, D-Pad, Back, Start, LT, RT | LB | Which button burns NOS. Applies right away. |
+| NOS Debug Overlay | On / Off | Off | Draws debug info over the game (see below). |
 | HUD Theme | Original / Fast & Furious | Fast & Furious | Original is the Forza Horizon 2 HUD with a yellow NOS bar. Fast & Furious has a cyan NOS bar, cyan gears and cyan ABS / TCS / STM icons. **Needs a game restart.** |
-| Nitro Boost Multiplier | 1.0x - 2.0x | 1.6x | Strength of the push. |
-| Nitro Tank Capacity (sec) | 5 - 60 | 20 | Seconds of nitro in a full tank. |
-| Nitro Buildup Time (sec) | 0.1 - 2.0 | 0.5 | How long the push takes to ramp up. |
-| Nitro Recharge Rate | 0.0 - 1.0 | 0.2 | Seconds of nitro restored per second while not boosting. |
-| Nitro Sound Volume | 0 - 100 | 50 | Volume of the boost and stop sounds. The game's own volume sliders don't change them. Applies from the next boost. |
-| Nitro Camera Shake | 0 - 100 | 65 | How much the camera shakes while nitro burns, in the driver, hood, bumper and chase views. 0 turns it off. Applies right away. |
+| Require NOS Kit | On / Off | On | On: only cars with the NOS Kit upgrade have NOS, and the kit's stage sets the tank and its recharge. Off: every car has NOS, with the NOS Tank Capacity and NOS Recharge Rate. Applies right away. |
+| Hide NOS Gauge Without Kit | On / Off | On | Hides the NOS gauge frame on cars without the kit. Off leaves an empty frame. Applies right away. |
+| NOS Boost Multiplier | 1.0x - 2.0x | 1.6x | Strength of the push, for every kit stage and for Drivatars. |
+| NOS Tank Capacity (sec) | 5 - 60 | 20 | Seconds of NOS in a full tank. Ignored while **Require NOS Kit** is on: then the kit's stage sets the tank. |
+| NOS Buildup Time (sec) | 0.1 - 2.0 | 0.5 | How long the push takes to ramp up. |
+| NOS Recharge Rate | 0.0 - 1.0 | 0.2 | Seconds of NOS restored per second while not boosting. Ignored while **Require NOS Kit** is on: then the kit's stage sets the recharge. |
+| NOS Sound Volume | 0 - 100 | 50 | Volume of the boost and stop sounds. The game's own volume sliders don't change them. Applies from the next boost. |
+| NOS Camera Shake | 0 - 100 | 65 | How much the camera shakes while NOS burns, in the driver, hood, bumper and chase views. 0 turns it off. Applies right away. |
+| NOS Wider FOV | 0 - 30 | 10 | How much wider (in %) the field of view gets while NOS burns, in the same views. 0 turns it off. Applies right away. |
+| NOS Blue Vignette | On / Off | On | A pulsing blue vignette at the screen edges while NOS burns. Applies right away. |
+| NOS Speed Lines | On / Off | On | Blue streaks flying out toward the screen edges while NOS burns, in step with the car's speed. Applies right away. |
 | Backfire on All Cars | On / Off | On | Lets every car backfire, which the exhaust flames need (see below). **Needs a game restart.** |
-| Refill Nitro on Race Start | On / Off | On | Fills the tank when a race starts, you quit one, you change car or you fast travel. Applies right away. |
-| Refund Nitro on Rewind | On / Off | On | Rewinding gives back the nitro you used since the point you rewind to. Applies right away. |
-| Nitro Controller Rumble | On / Off | On | Rumbles the controller while nitro burns. The game's own rumble isn't affected. Applies right away. |
-| Drivatar Nitro | On / Off | Off | Drivatars use nitro too, whenever they can, at any speed: they let off only in the air, in a big slide or when the tank runs dry (then, like you, they wait for 2 s of nitro). They don't boost before the race starts: not while your HUD is down, and only once they've been rolling for 2 s off the grid. Once they're more than 100 m ahead of you they coast, so you can catch up; behind you they boost freely. Each has a tank of its own with twice your capacity and recharge, and your boost and buildup. Their exhausts flame and the boost plays through the game's own audio at the car, so you hear it from where it is, fading out by 150 m. The nearest 6 are heard, at the Drivatar Nitro Volume. Applies right away. |
-| Drivatar Nitro Volume | 0 - 100 | 25 | Volume of the Drivatars' nitro sound, heard from their cars. 0 silences it. Applies right away. |
+| Refill NOS on Race Start | On / Off | On | Fills the tank when a race starts, you quit one, you change car or you fast travel. Applies right away. |
+| Refund NOS on Rewind | On / Off | On | Rewinding gives back the NOS you used since the point you rewind to. Applies right away. |
+| NOS Controller Rumble | On / Off | On | Rumbles the controller while NOS burns. The game's own rumble isn't affected. Applies right away. |
+| Drivatar NOS | On / Off | Off | Drivatars use NOS too, whenever they can, at any speed: they let off only in the air, in a big slide or when the tank runs dry (then, like you, they wait for 2 s of NOS). They don't boost before the race starts: not while your HUD is down, and only once they've been rolling for 2 s off the grid. Once they're more than 100 m ahead of you they coast, so you can catch up; behind you they boost freely. Each has a tank of its own, with twice the tank and twice the recharge of the NOS Kit on the car you're driving (no NOS while it has no kit), and your boost and buildup. Their exhausts flame and the boost plays through the game's own audio at the car, so you hear it from where it is, fading out by 150 m. The nearest 6 are heard, at the Drivatar NOS Volume. Applies right away. |
+| Drivatar NOS Volume | 0 - 100 | 25 | Volume of the Drivatars' NOS sound, heard from their cars. 0 silences it. Applies right away. |
 
 Settings are saved to `fh2-mods\FnFNitro.ini`:
 
@@ -66,13 +83,47 @@ DrivatarNitro=0
 Rumble=1
 HudTheme=FF
 DisabledCars=3884
+RequireNitrousKit=1
+HudHide=1
+FovBoost=0.10
+VignetteEnabled=1
+SpeedLinesEnabled=1
+
+[Upgrade]
+Area=1
+Price1=3000
+Tank1=5
+Price2=6000
+Tank2=10
+Price3=12000
+Tank3=20
+Price4=24000
+Tank4=30
+Recharge1=0.20
+Recharge2=0.25
+Recharge3=0.30
+Recharge4=0.40
 ```
+
+The NOS Kit fitted to each car you own is kept beside the game's saves, in `data\titles\1A96545B\FnFNitro\player-1\FnFNitroGarage.json` (the `player-N` of the save written last), and written when you install a stage. It's outside the `saves` folder on purpose: Azimuth checks the hashes of what's in there, so a file of the mod's own could make a save look damaged. Back up the `1A96545B` folder and the file comes along with your saves.
+
+```json
+{
+  "version": 1,
+  "cars": [
+    { "garageId": 32, "carOrdinal": 2183, "stage": 3 },
+    { "garageId": 45, "carOrdinal": 2183, "stage": 0 }
+  ]
+}
+```
+
+`garageId` is the game's id of one car you own, so two copies of the same model (`carOrdinal`) each have their own stage: here one has Stage 3 and the other no NOS. `stage` is 0 (none) to 4. If the game gives a sold car's `garageId` to a different model, that entry starts again from 0. You can edit the file while the game is closed. Older versions kept this in the ini as `[GarageNitro]` and `[GarageCar]`, or in `fh2-mods\FnFNitroGarage.json`; those are moved into the file the first time this version starts.
 
 A few notes on the file:
 
 - `HudTheme` is `FF` (Fast & Furious, the default) or `Original`. The mod writes the HUD files when it starts and when you change the setting, and the game reads them the next time it starts.
 
-- `NitroButton` picks which controller button burns nitro (default `LB`). An unknown value falls back to `LB`. In the ini you write the name:
+- `NitroButton` picks which controller button burns NOS (default `LB`). An unknown value falls back to `LB`. In the ini you write the name:
 
   | # | Name | Button | # | Name | Button |
   |---|---|---|---|---|---|
@@ -87,21 +138,22 @@ A few notes on the file:
 
   Pick one the game doesn't already use while driving, or it will do both at once. Changes on the Mods page apply immediately; edits to the file apply the next time the game starts.
 
-  With a platform older than 2.8.0 the Mods page can't show names, so **Nitro Button** is a slider with the numbers above and **HUD Theme** is a slider where 1 is Original and 2 is Fast & Furious.
-- `DisabledCars` lists cars that get no nitro and no NOS gauge, by the game's car id (`Data_Car.Id`), separated by commas: `3884` is the Knight Rider car, whose own mod uses LB. Leave it empty to give every car nitro. The platform log shows `Your car: id ...` each time you change car, which is how to find a car's id. There is no Mods page row for it.
+  With a platform older than 2.8.0 the Mods page can't show names, so **NOS Button** is a slider with the numbers above and **HUD Theme** is a slider where 1 is Original and 2 is Fast & Furious.
+- `[Upgrade]` sets the NOS Kit: `Price1`..`Price4` in CR, `Tank1`..`Tank4` (seconds of NOS, 1 to 600) and `Recharge1`..`Recharge4` (seconds of NOS restored per second, 0.00 to 5.00) for the four stages, and `Area`, the upgrade area the entry is listed under (1 = Engine). The prices, tanks, recharge rates and names are read at startup, so changes apply the next time the game starts. (`Boost1`..`Boost3` from an earlier version are removed: the push is the NOS Boost Multiplier for every stage.) Which stage each car has is kept in `FnFNitroGarage.json` (above).
+- `DisabledCars` lists cars that get no NOS and no NOS gauge, by the game's car id (`Data_Car.Id`), separated by commas: `3884` is the Knight Rider car, whose own mod uses LB. Leave it empty to let every car have NOS. The platform log shows `Your car: id ...` each time you change car, which is how to find a car's id. There is no Mods page row for it.
 - `BackfireOnAllCars` is the **Backfire on All Cars** row on the Mods page. When it is on, the mod makes every car able to backfire by changing the game database at startup, which the flames depend on. Turn it off to leave the game's own backfire settings alone: flames then only work on cars the game already lets backfire. A change only takes effect the next time the game starts.
 
 ### Debug overlay
 
-Switch on **Nitro Debug Overlay** to draw a small panel in the top-left corner of the game window: nitro state and fuel, whether the mod thinks you are driving, whether your car has been found (by the game's own car kinds, or by position until those are known), how many Drivatars are boosting, the exhaust tips, and the flame counters. It is a transparent window laid over the game, like the FPS counter, so the game must run in **borderless or windowed** mode.
+Switch on **NOS Debug Overlay** to draw a small panel in the top-left corner of the game window: NOS state and fuel, the NOS Kit stage and garage id of the car you're driving, whether the mod thinks you are driving, whether your car has been found (by the game's own car kinds, or by position until those are known), how many Drivatars are boosting, the exhaust tips, and the flame counters. It is a transparent window laid over the game, like the FPS counter, so the game must run in **borderless or windowed** mode.
 
 ---
 
 ## Requirements
 
 - **Azimuth** launcher with Forza Horizon 2.
-- The **FH2 Mod Platform** (`DWrite.dll` in the Azimuth folder; tested with platform 2.8.0). The other mods you may already have, such as ShowFPS or Achievements, use the same one.
-- **Forza Horizon 2 Extra Options.** The NOS speedometer gauge and its HUD textures, the blue flame effect and the "every car can backfire" database change are all delivered through its `mediaoverride` folder. Without it the nitro push, sound, camera shake and rumble still work, but those won't apply.
+- The **FH2 Mod Platform 2.8.0 or newer** (`DWrite.dll` in the Azimuth folder). The other mods you may already have, such as ShowFPS or Achievements, use the same one. The NOS Kit needs 2.8.0: with an older platform it isn't added to the garage, and every car has NOS instead.
+- **Forza Horizon 2 Extra Options** is optional. The NOS gauge and HUD textures, the blue flame effect, the upgrade icons and the database changes (the NOS Kit, and "every car can backfire") go to the game's `mediaoverride` folder; platform 2.7.3 and newer makes the game read that folder by itself, and with Extra Options installed it uses Extra Options' (keep its `EnableMediaOverrides` on).
 
 ---
 
@@ -115,7 +167,7 @@ The paths below are examples. Use your own Azimuth folder and the game's `Mount`
 2. Close the game. Copy the zip's **`azimuth-windows\`** folder into your Azimuth folder (the one with `azimuth.exe`). Say yes to merging.
 3. Start the game through Azimuth.
 
-The zip contains the mod (`FnFNitro.dll`, with the HUD files, flame effect and nitro sounds inside it), the FH2 Mod Platform (`DWrite.dll`, which loads mods; if you already have a newer one from another mod, keep yours), the licences, and an `INSTALL.txt` with these same steps.
+The zip contains the mod (`FnFNitro.dll`, with the HUD files, flame effect, upgrade icons and NOS sounds inside it), the FH2 Mod Platform (`DWrite.dll`, which loads mods; if you already have a newer one from another mod, keep yours), the licences, and an `INSTALL.txt` with these same steps.
 
 > [!IMPORTANT]
 > `FnFNitro.dll` goes in **`fh2-mods`**, the FH2 Mod Platform's folder. It is **not** an Extra Options mod: don't put it in Extra Options' `mods` folder, where it won't be loaded. If `fh2-mods` doesn't exist yet, the zip creates it.
@@ -131,7 +183,7 @@ The `dist\` folder in this repository mirrors where each file goes:
 | `dist\fh2-mods\FnFNitro.dll` | `D:\Games\FH2\azimuth-windows\fh2-mods\` |
 | `DWrite.dll` from the platform's [releases page](https://github.com/Trinculo54/fh2-mod-platform/releases) | `D:\Games\FH2\azimuth-windows\` (only if the platform isn't installed yet) |
 
-Start the game through Azimuth. Open `fh2-mods\platform.log` and look for lines like `loaded FnFNitro.dll`, and later `Player car located` and `Vertical axis learned`, which mean the mod found your car.
+Start the game through Azimuth. Open `fh2-mods\platform.log` and look for lines like `loaded FnFNitro.dll` and `nitrous upgrade active`, and later `Player car located` and `Vertical axis learned`, which mean the mod found your car.
 
 ---
 
@@ -170,11 +222,12 @@ Delete these from `azimuth-windows`:
 
 - `fh2-mods\FnFNitro.dll`
 - `fh2-mods\FnFNitro.ini` (your saved settings)
+- `data\titles\1A96545B\FnFNitro\` (the NOS Kit fitted to each of your cars)
 - the `FnFNitro\` folder, if you made one to use your own sounds
 
 ### 2. Start the game once
 
-Launch the game through Azimuth. The mod's HUD, flame and database files in `Mount\mediaoverride` are handed out by the FH2 Mod Platform, and it deletes them shortly after startup once no installed mod uses them: the NOS speedometer (`UI\Controls\HUDSpeedometerControl.xaml` and the textures under `UI\textures\Anthem\HUD\Speedometer\`, `UI\textures\data_bound\Anthem\HUD\` and `UI\textures\data_bound\SpireHUD\`), the flame effect (`Particles\Systems\Backfire.xml`) and the "every car can backfire" database copy (`stripped\gamedbRC.slt`, which is only made again if another mod still changes the database). The speedometer, flames and car backfires are then back to stock. Open `fh2-mods\platform.log`: there should be no `[NitroSystem]` lines.
+Launch the game through Azimuth. The mod's HUD, flame and database files in `Mount\mediaoverride` are handed out by the FH2 Mod Platform, and it deletes them shortly after startup once no installed mod uses them: the NOS speedometer (`UI\Controls\HUDSpeedometerControl.xaml` and the textures under `UI\textures\Anthem\HUD\Speedometer\`, `UI\textures\data_bound\Anthem\HUD\` and `UI\textures\data_bound\SpireHUD\`), the flame effect (`Particles\Systems\Backfire.xml`), the NOS Kit's upgrade icons (`UI\textures\data_bound\Upgrade_Parts\Custom\`) and the database copy with the NOS Kit and "every car can backfire" (`stripped\gamedbRC.slt`, which is only made again if another mod still changes the database). The speedometer, flames, car backfires and the garage's upgrade list are then back to stock. Open `fh2-mods\platform.log`: there should be no `[NitroSystem]` lines.
 
 ### 3. Only if you installed 1.2 or older by hand
 
@@ -206,7 +259,11 @@ foreach ($t in $targets) {
 
 ## Known limitations
 
-- **No nitro package in the upgrade shop.** The game's upgrade system has no slot for it.
+- **Buying a kit is recorded in your save.** Which stage is fitted to each car is kept in the mod's own file, but the purchase goes through the game's own upgrade shop, which records it in your save like any other part (in its list of bought parts, under part type 47). So the game remembers the stages you've bought: switching a car back to a stage it already owns is free, and the price paid gets the game's usual discount. After uninstalling the mod those entries stay in the save, pointing at upgrade rows that are gone with the mod; how the game treats them then hasn't been tested, so back up your saves before uninstalling.
+- **One file per player, picked at startup.** The mod uses the `saves\player-N` folder written last; switching players during a session is only noticed at the next launch.
+- **Stage 4 shows Stage 3's icon.** There's no picture of its own for it yet (`icons\stage4.png`).
+- **Garage names follow the language one launch late,** like the Mods page: they're made at startup, in the game's language of the last session.
+- **`[Upgrade]` changes need a restart.** The stages and their descriptions ("NOS, stage 3: 20 s tank, recharges 0.30 s per second.") are made at startup.
 
 ---
 
@@ -215,16 +272,44 @@ foreach ($t in $targets) {
 Everything the mod says goes to `fh2-mods\platform.log` (starts fresh every launch). Useful lines:
 
 - `loaded FnFNitro.dll`, then `[NitroSystem]` lines for each hook it installed: the mod is running.
-- `Player car located` and `Vertical axis learned: Y`: the mod found your car and which way is up. This takes a few seconds of driving after the game loads. Until it has found your car, the mod can't tell your car from AI cars and may push every simulated car, so give it a few seconds before you use nitro next to other cars.
-- `Camera view matrices hooked`: the camera shake is in place.
+- `Player car located` and `Vertical axis learned: Y`: the mod found your car and which way is up. This takes a few seconds of driving after the game loads. Until it has found your car, the mod can't tell your car from AI cars and may push every simulated car, so give it a few seconds before you use NOS next to other cars.
+- `Camera view matrices hooked` and `Camera field of view hooked`: the camera shake and the wider FOV are in place.
+- `nitrous upgrade active: Garage > Upgrades > Custom upgrade > Engine > Nitrous Kit`: the NOS Kit is in the garage. `NOS Kit of each car: ...` gives the path of the garage file, and `NOS Kit stage on the driven car: 3 (20 s tank, recharges 0.30 s/s)` appears when you get in a car.
+- `The NOS Kit upgrade could not be set up` or `the nitrous upgrade is not active`: the kit couldn't be added (platform older than 2.8.0, or a game build it doesn't know), so every car has NOS.
 - `Failed to ...` or `Could not hook ...`: a hook didn't install, usually because the game build isn't the one this mod was written for.
 
-If there is no NOS gauge or no flames, check that **Extra Options** is installed and running, and that `platform.log` has `[NitroSystem] replaces media\...` lines for the HUD files and `Backfire.xml`. If it says the mod couldn't replace a file, another mod is already replacing it.
+If there is no NOS gauge or no flames, check that the platform is 2.7.3 or newer (or that **Extra Options** is installed with `EnableMediaOverrides` on), and that `platform.log` has `[NitroSystem] replaces media\...` lines for the HUD files and `Backfire.xml`. If it says the mod couldn't replace a file, another mod is already replacing it. If the gauge is there but empty with no frame, the car you're driving has no NOS Kit (or is in `DisabledCars`).
+
+---
+
+## For mod authors: switching NOS off
+
+Full details, with a ready-to-copy lookup thread, are in [docs/MOD_CONTROL.md](docs/MOD_CONTROL.md). Another FH2 Mod Platform mod can switch the player's NOS off while it needs to, and read whether NOS is burning and how full the tank is. Copy [`include/NitroSystemControl.h`](include/NitroSystemControl.h) into your mod and look the switch up once every mod has started:
+
+```c
+#include "NitroSystemControl.h"
+
+// from your own thread, not from fh2mod_init
+api->wait_for_mods(10000);
+const NitroSystemControl* nos =
+    (const NitroSystemControl*)api->get_interface(NITROSYSTEM_CONTROL_NAME, NITROSYSTEM_CONTROL_VERSION);
+
+if (nos) nos->set_blocked("MyMod", 1);   // NOS off for the player
+if (nos) nos->set_blocked("MyMod", 0);   // and on again
+```
+
+- `set_blocked(who, on)`: each mod blocks under its own name, and NOS stays off while any mod blocks it, so two mods can't undo each other. While blocked, the NOS button does nothing, NOS that was burning stops at once and the NOS gauge is hidden; the tank still recharges, and Drivatars aren't affected. Blocks last until the game closes.
+- `is_blocked()`, `is_active()` (NOS burning) and `nitro_percent()` (tank, 0 to 100).
+- `NULL` from `get_interface` means Nitro System isn't installed: carry on without it.
+- Without the platform's interfaces, `FnFNitro.dll` exports the same as `FnFNitro_SetBlocked`, `FnFNitro_IsBlocked`, `FnFNitro_IsActive` and `FnFNitro_GetNitroPercent`.
+
+`platform.log` says `NOS blocked by MyMod.` and `NOS no longer blocked by MyMod.`, and the debug overlay lists the mods blocking it. **ANNA Drone Mode** needs none of this: Nitro System asks it whether the drone is flying (`ANNA Drone Mode found` in the log) and blocks NOS under its name.
 
 ---
 
 ## Credits
 
+- **Levilente**, for [NitroSystem II](https://github.com/Levilente/NitroSystem-II), whose NOS Kit garage upgrade (`src/nu_upgrade.h`, `src/nu_sql.h`), upgrade icons (`icons/`, `scripts/gen_icons.py`, `scripts/icontools/`), wider FOV, blue vignette and speed lines (`hud/HUDSpeedometerControl.xaml`, `scripts/gen_speedlines.py`) are used here under the MIT License.
 - **NitroSystem II**, this mod's Forza Horizon 3 port, which found that the car can be asked for its exhaust locators before its first backfire. FH2 does it the same way, which is how the flames start straight away.
-- **[suderek22](https://github.com/suderek22)**, for [FH2_HonkHonk](https://github.com/suderek22/FH2_HonkHonk). It showed how to play sounds through the game's own FMOD audio engine at a position in the world, which is how the Drivatars' nitro sound is played from their cars. No HonkHonk code is used here: this mod calls the same FMOD functions with its own code.
-- **Deuquan**, for FH2-CameraMods. It showed which camera functions build the driver, hood, bumper and chase cameras' view, which is where the nitro camera shake is applied.
+- **[suderek22](https://github.com/suderek22)**, for [FH2_HonkHonk](https://github.com/suderek22/FH2_HonkHonk). It showed how to play sounds through the game's own FMOD audio engine at a position in the world, which is how the Drivatars' NOS sound is played from their cars. No HonkHonk code is used here: this mod calls the same FMOD functions with its own code.
+- **Deuquan**, for FH2-CameraMods. It showed which camera functions build the driver, hood, bumper and chase cameras' view, which is where the NOS camera shake and wider FOV are applied.

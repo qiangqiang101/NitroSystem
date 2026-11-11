@@ -579,8 +579,8 @@
                             <local:FZMaterialPresetDigitalGauge FillAmount="{Binding GaugeFillAmount}" RedLineAmount="{Binding GaugeRedlineAmount}" SmallDash="{Binding GaugeSmallDashAmount}" LargeDash="{Binding GaugeLargeDashAmount}" />
                         </local:FZMaterial.Preset>
                     </local:FZMaterial>
-                    <!-- Authentic Fast & Furious NOS Digital Bar (4 Segments with Transparent Gaps). Hidden in a car the nitro leaves alone (YPos of RPMGaugeNumbers[18] is 1 or 0) -->
-                    <StackPanel Orientation="Horizontal" Margin="21,-22,0,0" Opacity="{Binding RPMGaugeNumbers[18].YPos}">
+                    <!-- Authentic Fast & Furious NOS Digital Bar (4 Segments with Transparent Gaps) -->
+                    <StackPanel Orientation="Horizontal" Margin="21,-22,0,0" Opacity="{Binding RPMGaugeNumbers[20].YPos}">
                         <Grid Margin="0,6,0,0">
                             <!-- 4 Sequential NOS Segments with Translucent Empty Background & Active White Tip Glow -->
                             <StackPanel Orientation="Horizontal" Width="245" Height="8" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="1,0,0,0">
@@ -725,11 +725,10 @@
 
                     <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[12]}" Style="{StaticResource A_Style_FZMaterial_GaugeNumbers}" ImageSource="/ForzaUI;component/Textures/Anthem/HUD/Speedometer/HUD_Dial_RevNumbers_12.png"/>
 
-                    <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[13]}" Style="{StaticResource A_Style_FZMaterial_GaugeNumbers}" ImageSource="/ForzaUI;component/Textures/Anthem/HUD/Speedometer/HUD_Dial_RevNumbers_13.png"/>
 
-                    <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[14]}" Style="{StaticResource A_Style_FZMaterial_GaugeNumbers}" ImageSource="/ForzaUI;component/Textures/Anthem/HUD/Speedometer/HUD_Dial_RevNumbers_14.png"/>
 
-                    <local:FZMaterial DataContext="{Binding RPMGaugeNumbers[15]}" Style="{StaticResource A_Style_FZMaterial_GaugeNumbers}" ImageSource="/ForzaUI;component/Textures/Anthem/HUD/Speedometer/HUD_Dial_RevNumbers_15.png"/>
+
+
 
                     <local:FZMaterial Height="{StaticResource A_Double_Speedo_Analog_Height}" Width="{StaticResource A_Double_Speedo_Width}" RenderTransformOrigin="0.5,0.5" Data="{StaticResource A_FZGeometry_AnalogGaugeMesh}"> <!-- Gauge -->
                          <local:FZMaterial.Preset>
@@ -737,14 +736,13 @@
                           </local:FZMaterial.Preset>
                      </local:FZMaterial>
 
-<!-- The NOS radial bar, hidden in a car the nitro leaves alone (YPos of RPMGaugeNumbers[18] is 1 or 0) -->
-                    <Grid Opacity="{Binding RPMGaugeNumbers[18].YPos}">
 <!-- Authentic Fast & Furious NOS Radial Bar Translucent Background Track (4 Segments) -->
                     <!-- Background Segment 4 (Top: Angle 128.7) -->
                     <local:FZMaterial Height="300"
                                       Width="300"
                                       RenderTransformOrigin="0.5,0.5"
-                                      Color="{StaticResource A_Color_Nitrous_Background}">
+                                      Color="{StaticResource A_Color_Nitrous_Background}"
+                                      Opacity="{Binding RPMGaugeNumbers[20].YPos}">
                         <local:FZMaterial.RenderTransform>
                             <TransformGroup>
                                 <RotateTransform Angle="128.7"/>
@@ -767,7 +765,8 @@
                     <local:FZMaterial Height="300"
                                       Width="300"
                                       RenderTransformOrigin="0.5,0.5"
-                                      Color="{StaticResource A_Color_Nitrous_Background}">
+                                      Color="{StaticResource A_Color_Nitrous_Background}"
+                                      Opacity="{Binding RPMGaugeNumbers[20].YPos}">
                         <local:FZMaterial.RenderTransform>
                             <TransformGroup>
                                 <RotateTransform Angle="107.8"/>
@@ -790,7 +789,8 @@
                     <local:FZMaterial Height="300"
                                       Width="300"
                                       RenderTransformOrigin="0.5,0.5"
-                                      Color="{StaticResource A_Color_Nitrous_Background}">
+                                      Color="{StaticResource A_Color_Nitrous_Background}"
+                                      Opacity="{Binding RPMGaugeNumbers[20].YPos}">
                         <local:FZMaterial.RenderTransform>
                             <TransformGroup>
                                 <RotateTransform Angle="86.9"/>
@@ -813,7 +813,8 @@
                     <local:FZMaterial Height="300"
                                       Width="300"
                                       RenderTransformOrigin="0.5,0.5"
-                                      Color="{StaticResource A_Color_Nitrous_Background}">
+                                      Color="{StaticResource A_Color_Nitrous_Background}"
+                                      Opacity="{Binding RPMGaugeNumbers[20].YPos}">
                         <local:FZMaterial.RenderTransform>
                             <TransformGroup>
                                 <RotateTransform Angle="66.0"/>
@@ -1261,6 +1262,7 @@
                     <local:FZMaterial Height="256"
                                       Width="128"
                                       ImageSource="/ForzaUI;component/Textures/Data_Bound/SpireHUD/HUD_Nos_Outline_Radial_Bar.png"
+                                      Opacity="{Binding RPMGaugeNumbers[20].YPos}"
                                       RenderTransformOrigin="0.0,0.5">
                         <local:FZMaterial.RenderTransform>
                             <TransformGroup>
@@ -1269,7 +1271,6 @@
                             </TransformGroup>
                         </local:FZMaterial.RenderTransform>
                     </local:FZMaterial>
-                    </Grid>
 
 <local:FZMaterial Style="{StaticResource A_Style_FZMaterial_Needle}" HorizontalAlignment="Center" VerticalAlignment="Center"> <!-- Needle -->
 
@@ -1353,6 +1354,898 @@
 
 
 
+
+
+
+
+
+
+            <!-- SPEEDLINES-BEGIN storyboard -->
+            <LinearGradientBrush x:Key="NitroSpeedLine_Brush" StartPoint="0,0.5" EndPoint="1,0.5">
+                <GradientStop Color="#004FD8FF" Offset="0"/>
+                <GradientStop Color="#704FD8FF" Offset="0.55"/>
+                <GradientStop Color="#FFB8F2FF" Offset="1"/>
+            </LinearGradientBrush>
+            <Storyboard x:Key="NitroSpeedLines">
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroTier0" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[2].(RotateTransform.Angle)" RepeatBehavior="Forever">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"><EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                    <EasingDoubleKeyFrame KeyTime="0:0:3.25" Value="20"><EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                    <EasingDoubleKeyFrame KeyTime="0:0:9.75" Value="-20"><EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                    <EasingDoubleKeyFrame KeyTime="0:0:13" Value="0"><EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroTier1" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[2].(RotateTransform.Angle)" RepeatBehavior="Forever">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"><EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                    <EasingDoubleKeyFrame KeyTime="0:0:4.25" Value="-20"><EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                    <EasingDoubleKeyFrame KeyTime="0:0:12.75" Value="20"><EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                    <EasingDoubleKeyFrame KeyTime="0:0:17" Value="0"><EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroTier2" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[2].(RotateTransform.Angle)" RepeatBehavior="Forever">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"><EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                    <EasingDoubleKeyFrame KeyTime="0:0:2.75" Value="20"><EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                    <EasingDoubleKeyFrame KeyTime="0:0:8.25" Value="-20"><EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                    <EasingDoubleKeyFrame KeyTime="0:0:11" Value="0"><EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroTier3" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[2].(RotateTransform.Angle)" RepeatBehavior="Forever">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"><EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                    <EasingDoubleKeyFrame KeyTime="0:0:3.75" Value="-20"><EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                    <EasingDoubleKeyFrame KeyTime="0:0:11.25" Value="20"><EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                    <EasingDoubleKeyFrame KeyTime="0:0:15" Value="0"><EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroTier4" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[2].(RotateTransform.Angle)" RepeatBehavior="Forever">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"><EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                    <EasingDoubleKeyFrame KeyTime="0:0:4.75" Value="20"><EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                    <EasingDoubleKeyFrame KeyTime="0:0:14.25" Value="-20"><EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                    <EasingDoubleKeyFrame KeyTime="0:0:19" Value="0"><EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroTier5" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[2].(RotateTransform.Angle)" RepeatBehavior="Forever">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"><EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                    <EasingDoubleKeyFrame KeyTime="0:0:3" Value="-20"><EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                    <EasingDoubleKeyFrame KeyTime="0:0:9" Value="20"><EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                    <EasingDoubleKeyFrame KeyTime="0:0:12" Value="0"><EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_0" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.389">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="337.421"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.76" Value="830.398"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_0" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.389">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.76" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_0" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.389">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.528" Value="0.231"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.32" Value="0.513"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.76" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_1" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.455">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="689.021"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.683" Value="1412.124"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_1" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.455">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.683" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_1" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.455">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.505" Value="0.217"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.263" Value="0.482"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.683" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_2" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:1.169">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="741.354"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.455" Value="1334.555"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_2" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:1.169">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.455" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_2" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:1.169">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.437" Value="0.246"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.091" Value="0.546"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.455" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_3" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.783">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="599.578"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.721" Value="1334.075"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_3" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.783">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.721" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_3" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.783">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.516" Value="0.272"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.29" Value="0.605"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.721" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_4" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:1.255">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="423.097"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:2.893" Value="1257.311"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_4" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:1.255">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:2.893" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_4" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:1.255">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.868" Value="0.254"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:2.17" Value="0.565"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:2.893" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_5" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.181">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="393.644"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.404" Value="945.491"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_5" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.181">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.404" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_5" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.181">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.421" Value="0.302"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.053" Value="0.671"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.404" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_6" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.443">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="739.826"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.783" Value="1462.752"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_6" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.443">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.783" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_6" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.443">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.535" Value="0.317"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.337" Value="0.705"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.783" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_7" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.903">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="644.241"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.973" Value="1322.114"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_7" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.903">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.973" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_7" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.903">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.592" Value="0.316"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.48" Value="0.703"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.973" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_8" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:2.107">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="652.55"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:3.033" Value="1412.02"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_8" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:2.107">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:3.033" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_8" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:2.107">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.91" Value="0.214"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:2.274" Value="0.475"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:3.033" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_9" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.704">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="691.999"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:2.478" Value="1333.897"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_9" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.704">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:2.478" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL0_9" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.704">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.743" Value="0.238"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.858" Value="0.529"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:2.478" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_0" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.244">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="359.34"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.817" Value="893.234"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_0" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.244">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.817" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_0" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.244">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.245" Value="0.32"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.613" Value="0.712"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.817" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_1" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.95">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="299.639"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.252" Value="947.332"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_1" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.95">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.252" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_1" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.95">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.376" Value="0.34"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.939" Value="0.756"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.252" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_2" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:1.108">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="724.651"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.2" Value="1322.815"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_2" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:1.108">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.2" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_2" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:1.108">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.36" Value="0.256"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.9" Value="0.569"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.2" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_3" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:1.164">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="578.128"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.368" Value="1363.324"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_3" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:1.164">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.368" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_3" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:1.164">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.41" Value="0.314"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.026" Value="0.697"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.368" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_4" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.75">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="336.683"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.909" Value="948.934"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_4" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.75">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.909" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_4" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.75">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.273" Value="0.314"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.682" Value="0.698"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.909" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_5" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.997">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="373.721"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.44" Value="1107.246"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_5" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.997">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.44" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_5" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.997">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.432" Value="0.278"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.08" Value="0.618"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.44" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_6" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.638">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="288.22"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.745" Value="796.651"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_6" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.638">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.745" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_6" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.638">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.223" Value="0.262"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.559" Value="0.582"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.745" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_7" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:1.24">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="524.818"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.277" Value="1450.636"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_7" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:1.24">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.277" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_7" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:1.24">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.383" Value="0.246"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.957" Value="0.546"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.277" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_8" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.842">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="371.028"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.244" Value="910.992"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_8" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.842">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.244" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_8" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.842">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.373" Value="0.239"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.933" Value="0.53"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.244" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_9" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.275">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="353.352"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.953" Value="931.652"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_9" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.275">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.953" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL1_9" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.275">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.286" Value="0.246"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.714" Value="0.548"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.953" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_0" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.164">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="660.23"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.698" Value="1299.803"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_0" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.164">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.698" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_0" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.164">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.209" Value="0.285"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.524" Value="0.633"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.698" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_1" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.092">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="631.168"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.67" Value="1408.474"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_1" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.092">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.67" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_1" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.092">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.201" Value="0.354"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.502" Value="0.787"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.67" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_2" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.34">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="575.551"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.741" Value="1341.487"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_2" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.34">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.741" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_2" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.34">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.222" Value="0.317"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.556" Value="0.704"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.741" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_3" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.009">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="607.029"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.06" Value="1469.78"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_3" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.009">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.06" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_3" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.009">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.318" Value="0.38"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.795" Value="0.845"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:1.06" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_4" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.566">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="574.833"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.674" Value="1276.483"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_4" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.566">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.674" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_4" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.566">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.202" Value="0.26"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.506" Value="0.577"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.674" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_5" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.057">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="344.907"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.598" Value="1034.575"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_5" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.057">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.598" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_5" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.057">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.18" Value="0.265"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.449" Value="0.589"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.598" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_6" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.385">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="592.434"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.77" Value="1380.41"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_6" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.385">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.77" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_6" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.385">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.231" Value="0.332"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.577" Value="0.739"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.77" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_7" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.234">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="381.246"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.41" Value="799.692"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_7" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.234">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.41" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_7" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.234">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.123" Value="0.31"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.308" Value="0.689"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.41" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_8" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.009">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="508.247"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.857" Value="1355.4"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_8" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.009">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.857" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_8" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.009">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.257" Value="0.256"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.642" Value="0.568"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.857" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_9" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.069">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="382.211"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.528" Value="825.776"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_9" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.069">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.528" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL2_9" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.069">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.158" Value="0.353"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.396" Value="0.785"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.528" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_0" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.353">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="331.861"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.624" Value="1104.23"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_0" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.353">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.624" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_0" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.353">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.187" Value="0.267"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.468" Value="0.593"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.624" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_1" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.74">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="564.605"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.877" Value="1495.658"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_1" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.74">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.877" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_1" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.74">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.263" Value="0.335"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.657" Value="0.744"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.877" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_2" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.118">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="592.625"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.506" Value="1362.104"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_2" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.118">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.506" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_2" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.118">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.152" Value="0.37"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.38" Value="0.823"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.506" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_3" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.051">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="687.734"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.519" Value="1342.519"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_3" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.051">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.519" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_3" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.051">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.156" Value="0.327"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.389" Value="0.727"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.519" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_4" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.488">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="599.132"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.564" Value="1442.015"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_4" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.488">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.564" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_4" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.488">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.169" Value="0.345"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.423" Value="0.767"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.564" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_5" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.421">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="696.299"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.431" Value="1378.326"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_5" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.421">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.431" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_5" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.421">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.129" Value="0.382"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.323" Value="0.848"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.431" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_6" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.076">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="605.845"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.463" Value="1396.573"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_6" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.076">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.463" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_6" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.076">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.139" Value="0.222"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.348" Value="0.494"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.463" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_7" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.044">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="677.694"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.717" Value="1435.614"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_7" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.044">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.717" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_7" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.044">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.215" Value="0.339"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.538" Value="0.753"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.717" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_8" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.127">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="505.636"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.843" Value="1469.891"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_8" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.127">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.843" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_8" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.127">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.253" Value="0.28"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.632" Value="0.623"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.843" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_9" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.041">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="396.453"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.402" Value="980.228"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_9" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.041">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.402" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL3_9" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.041">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.12" Value="0.308"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.301" Value="0.683"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.402" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_0" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.259">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="315.807"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.361" Value="1039.867"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_0" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.259">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.361" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_0" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.259">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.108" Value="0.254"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.27" Value="0.566"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.361" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_1" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.336">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="710.634"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.403" Value="1393.76"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_1" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.336">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.403" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_1" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.336">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.121" Value="0.365"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.302" Value="0.811"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.403" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_2" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.084">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="528.871"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.551" Value="1439.223"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_2" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.084">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.551" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_2" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.084">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.165" Value="0.33"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.413" Value="0.733"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.551" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_3" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.3">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="601.386"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.377" Value="1274.588"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_3" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.3">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.377" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_3" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.3">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.113" Value="0.29"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.283" Value="0.644"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.377" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_4" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.041">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="294.207"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.304" Value="805.576"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_4" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.041">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.304" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_4" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.041">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.091" Value="0.361"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.228" Value="0.802"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.304" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_5" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.316">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="704.645"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.483" Value="1393.513"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_5" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.316">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.483" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_5" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.316">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.145" Value="0.362"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.362" Value="0.805"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.483" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_6" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.014">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="404.782"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.207" Value="896.029"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_6" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.014">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.207" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_6" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.014">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.062" Value="0.246"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.156" Value="0.547"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.207" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_7" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.176">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="344.826"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.471" Value="1269.478"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_7" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.176">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.471" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_7" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.176">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.141" Value="0.253"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.353" Value="0.561"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.471" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_8" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.43">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="586.369"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.579" Value="1430.77"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_8" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.43">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.579" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_8" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.43">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.174" Value="0.204"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.434" Value="0.453"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.579" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_9" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.112">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="423.077"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.389" Value="1175.776"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_9" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.112">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.389" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL4_9" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.112">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.117" Value="0.242"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.292" Value="0.537"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.389" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_0" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.168">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="516.09"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.275" Value="1391.929"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_0" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.168">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.275" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_0" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.168">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.082" Value="0.272"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.206" Value="0.604"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.275" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_1" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.084">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="611.581"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.262" Value="1357.448"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_1" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.084">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.262" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_1" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.084">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.079" Value="0.221"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.196" Value="0.49"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.262" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_2" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.275">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="385.295"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.284" Value="947.312"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_2" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.275">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.284" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_2" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.275">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.085" Value="0.222"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.213" Value="0.494"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.284" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_3" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.201">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="423.776"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.35" Value="1316.468"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_3" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.201">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.35" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_3" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.201">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.105" Value="0.303"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.262" Value="0.674"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.35" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_4" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.015">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="643.117"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.259" Value="1342.48"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_4" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.015">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.259" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_4" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.015">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.078" Value="0.327"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.194" Value="0.726"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.259" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_5" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.259">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="589.658"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.385" Value="1369.008"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_5" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.259">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.385" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_5" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.259">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.115" Value="0.291"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.289" Value="0.647"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.385" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_6" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.155">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="302.761"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.156" Value="781.293"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_6" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.155">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.156" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_6" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.155">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.047" Value="0.316"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.117" Value="0.703"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.156" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_7" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.09">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="491.859"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.285" Value="1453.422"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_7" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.09">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.285" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_7" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.09">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.086" Value="0.356"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.214" Value="0.792"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.285" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_8" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.118">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="509.409"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.303" Value="1343.71"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_8" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.118">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.303" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_8" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.118">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.091" Value="0.281"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.228" Value="0.625"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.303" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_9" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.X)" RepeatBehavior="Forever" BeginTime="0:0:0.121">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="339.653"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.207" Value="1046.505"><EasingDoubleKeyFrame.EasingFunction><PowerEase EasingMode="EaseIn" Power="1.6"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_9" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)" RepeatBehavior="Forever" BeginTime="0:0:0.121">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.5"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.207" Value="1.6"/>
+                </DoubleAnimationUsingKeyFrames>
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="NitroSL5_9" Storyboard.TargetProperty="(UIElement.Opacity)" RepeatBehavior="Forever" BeginTime="0:0:0.121">
+                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.062" Value="0.267"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.155" Value="0.594"/>
+                    <EasingDoubleKeyFrame KeyTime="0:0:0.207" Value="0"/>
+                </DoubleAnimationUsingKeyFrames>
+            </Storyboard>
+            <!-- SPEEDLINES-END storyboard -->
+
             <RadialGradientBrush x:Key="A_Brush_MapShadowBackground">
 
 				<GradientStop Color="#00000000" Offset="0"/>
@@ -1366,6 +2259,17 @@
         </ResourceDictionary>
 
 	</UserControl.Resources>
+    <!-- SPEEDLINES-BEGIN triggers -->
+    <UserControl.Triggers>
+        <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+            <BeginStoryboard Storyboard="{StaticResource NitroSpeedLines}"/>
+        </EventTrigger>
+    </UserControl.Triggers>
+    <!-- SPEEDLINES-END triggers -->
+
+
+
+
 
 
 
@@ -1415,7 +2319,276 @@
 
         <Rectangle HorizontalAlignment="Center" Height="450" VerticalAlignment="Center" Width="600" Margin="0,30,0,0" Fill="{StaticResource A_Brush_MapShadowBackground}" Opacity="0"/>
 
-	    <ContentControl HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource A_Style_ContentControl_Speedometer}"/>
+        <!-- Nitro vignette: two full-screen radial gradients, far bigger than this control and shifted to the middle
+             of the 1920x1080 scene. The plugin sets their opacity while the nitro burns (0 = invisible).
+             A: the edge tint, opacity from RPMGaugeNumbers[18].YPos.
+             B: a wider glow that reaches further in (the Intensity setting), opacity from RPMGaugeNumbers[19].YPos. -->
+        <Border HorizontalAlignment="Center" VerticalAlignment="Center" Width="2300" Height="1350"
+                IsHitTestVisible="False" DataContext="{Binding Path=DataContext, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+                Opacity="{Binding RPMGaugeNumbers[18].YPos}">
+            <Border.RenderTransform>
+                <TranslateTransform X="-693" Y="-362"/>
+            </Border.RenderTransform>
+            <Border.Background>
+                <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
+                    <GradientStop Color="#001E78FF" Offset="0"/>
+                    <GradientStop Color="#001E78FF" Offset="0.55"/>
+                    <GradientStop Color="#081E78FF" Offset="0.65"/>
+                    <GradientStop Color="#241E78FF" Offset="0.75"/>
+                    <GradientStop Color="#4A1E78FF" Offset="0.85"/>
+                    <GradientStop Color="#781E8CFF" Offset="0.95"/>
+                    <GradientStop Color="#A01E8CFF" Offset="1"/>
+                </RadialGradientBrush>
+            </Border.Background>
+        </Border>
+        <Border HorizontalAlignment="Center" VerticalAlignment="Center" Width="2300" Height="1350"
+                IsHitTestVisible="False" DataContext="{Binding Path=DataContext, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+                Opacity="{Binding RPMGaugeNumbers[19].YPos}">
+            <Border.RenderTransform>
+                <TranslateTransform X="-693" Y="-362"/>
+            </Border.RenderTransform>
+            <Border.Background>
+                <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
+                    <GradientStop Color="#001E78FF" Offset="0"/>
+                    <GradientStop Color="#001E78FF" Offset="0.3"/>
+                    <GradientStop Color="#101E78FF" Offset="0.5"/>
+                    <GradientStop Color="#2C1E78FF" Offset="0.7"/>
+                    <GradientStop Color="#561E8CFF" Offset="0.85"/>
+                    <GradientStop Color="#801E8CFF" Offset="1"/>
+                </RadialGradientBrush>
+            </Border.Background>
+        </Border>
+
+
+
+
+
+
+
+
+        <!-- SPEEDLINES-BEGIN elements -->
+        <!-- Nitro speed lines (like NFS Unbound), see scripts/gen_speedlines.py: streaks flying outward in 6 tiers of different speed.
+             They run all the time; the plugin sets the opacity of each tier container (RPMGaugeNumbers[15].XPos, RPMGaugeNumbers[15].YPos, RPMGaugeNumbers[14].XPos, RPMGaugeNumbers[14].YPos, RPMGaugeNumbers[13].XPos, RPMGaugeNumbers[13].YPos)
+             from the nitro and the car speed (0 = invisible), crossfading neighbouring tiers. -->
+        <Grid x:Name="NitroTier0" HorizontalAlignment="Center" VerticalAlignment="Center" Width="2300" Height="1350" IsHitTestVisible="False" RenderTransformOrigin="0.5,0.5" DataContext="{Binding Path=DataContext, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+              Opacity="{Binding RPMGaugeNumbers[15].XPos}">
+            <Grid.RenderTransform>
+                <TransformGroup><ScaleTransform/><SkewTransform/><RotateTransform/><TranslateTransform X="-693" Y="-362"/></TransformGroup>
+            </Grid.RenderTransform>
+            <Rectangle x:Name="NitroSL0_0" Width="181.374" Height="3" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="337.421"/><RotateTransform Angle="274.97"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL0_1" Width="218.919" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="689.021"/><RotateTransform Angle="328.235"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL0_2" Width="144.705" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="741.354"/><RotateTransform Angle="202.775"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL0_3" Width="140.272" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="599.578"/><RotateTransform Angle="15.103"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL0_4" Width="179.887" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="423.097"/><RotateTransform Angle="233.513"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL0_5" Width="226.111" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="393.644"/><RotateTransform Angle="285.402"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL0_6" Width="292.53" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="739.826"/><RotateTransform Angle="30.312"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL0_7" Width="126.628" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="644.241"/><RotateTransform Angle="199.132"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL0_8" Width="205.39" Height="3" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="652.55"/><RotateTransform Angle="200.817"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL0_9" Width="120.774" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="691.999"/><RotateTransform Angle="12.649"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+        </Grid>
+        <Grid x:Name="NitroTier1" HorizontalAlignment="Center" VerticalAlignment="Center" Width="2300" Height="1350" IsHitTestVisible="False" RenderTransformOrigin="0.5,0.5" DataContext="{Binding Path=DataContext, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+              Opacity="{Binding RPMGaugeNumbers[15].YPos}">
+            <Grid.RenderTransform>
+                <TransformGroup><ScaleTransform/><SkewTransform/><RotateTransform/><TranslateTransform X="-693" Y="-362"/></TransformGroup>
+            </Grid.RenderTransform>
+            <Rectangle x:Name="NitroSL1_0" Width="210.306" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="359.34"/><RotateTransform Angle="259.22"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL1_1" Width="209.616" Height="3" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="299.639"/><RotateTransform Angle="252.861"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL1_2" Width="122.613" Height="3" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="724.651"/><RotateTransform Angle="203.527"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL1_3" Width="215.681" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="578.128"/><RotateTransform Angle="356.867"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL1_4" Width="225.626" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="336.683"/><RotateTransform Angle="254.181"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL1_5" Width="255.213" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="373.721"/><RotateTransform Angle="296.434"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL1_6" Width="119.736" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="288.22"/><RotateTransform Angle="261.394"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL1_7" Width="253.849" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="524.818"/><RotateTransform Angle="217.66"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL1_8" Width="277.149" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="371.028"/><RotateTransform Angle="266.093"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL1_9" Width="278.879" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="353.352"/><RotateTransform Angle="262.691"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+        </Grid>
+        <Grid x:Name="NitroTier2" HorizontalAlignment="Center" VerticalAlignment="Center" Width="2300" Height="1350" IsHitTestVisible="False" RenderTransformOrigin="0.5,0.5" DataContext="{Binding Path=DataContext, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+              Opacity="{Binding RPMGaugeNumbers[14].XPos}">
+            <Grid.RenderTransform>
+                <TransformGroup><ScaleTransform/><SkewTransform/><RotateTransform/><TranslateTransform X="-693" Y="-362"/></TransformGroup>
+            </Grid.RenderTransform>
+            <Rectangle x:Name="NitroSL2_0" Width="157.586" Height="3" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="660.23"/><RotateTransform Angle="181.795"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL2_1" Width="205.873" Height="3" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="631.168"/><RotateTransform Angle="151.524"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL2_2" Width="146.884" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="575.551"/><RotateTransform Angle="168.762"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL2_3" Width="270.355" Height="3" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="607.029"/><RotateTransform Angle="327.243"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL2_4" Width="137.731" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="574.833"/><RotateTransform Angle="181.107"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL2_5" Width="251.023" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="344.907"/><RotateTransform Angle="248.41"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL2_6" Width="225.325" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="592.434"/><RotateTransform Angle="4.073"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL2_7" Width="114.276" Height="3" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="381.246"/><RotateTransform Angle="279.783"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL2_8" Width="150.82" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="508.247"/><RotateTransform Angle="224.169"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL2_9" Width="144.628" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="382.211"/><RotateTransform Angle="260.395"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+        </Grid>
+        <Grid x:Name="NitroTier3" HorizontalAlignment="Center" VerticalAlignment="Center" Width="2300" Height="1350" IsHitTestVisible="False" RenderTransformOrigin="0.5,0.5" DataContext="{Binding Path=DataContext, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+              Opacity="{Binding RPMGaugeNumbers[14].YPos}">
+            <Grid.RenderTransform>
+                <TransformGroup><ScaleTransform/><SkewTransform/><RotateTransform/><TranslateTransform X="-693" Y="-362"/></TransformGroup>
+            </Grid.RenderTransform>
+            <Rectangle x:Name="NitroSL3_0" Width="220.642" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="331.861"/><RotateTransform Angle="241.898"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL3_1" Width="298.066" Height="3" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="564.605"/><RotateTransform Angle="217.521"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL3_2" Width="163.482" Height="3" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="592.625"/><RotateTransform Angle="215.753"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL3_3" Width="143.403" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="687.734"/><RotateTransform Angle="154.105"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL3_4" Width="268.205" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="599.132"/><RotateTransform Angle="22.423"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL3_5" Width="168.316" Height="3" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="696.299"/><RotateTransform Angle="200.789"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL3_6" Width="186.724" Height="3" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="605.845"/><RotateTransform Angle="24.931"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL3_7" Width="249.04" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="677.694"/><RotateTransform Angle="9.949"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL3_8" Width="277.287" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="505.636"/><RotateTransform Angle="8.228"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL3_9" Width="201.95" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="396.453"/><RotateTransform Angle="290.76"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+        </Grid>
+        <Grid x:Name="NitroTier4" HorizontalAlignment="Center" VerticalAlignment="Center" Width="2300" Height="1350" IsHitTestVisible="False" RenderTransformOrigin="0.5,0.5" DataContext="{Binding Path=DataContext, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+              Opacity="{Binding RPMGaugeNumbers[13].XPos}">
+            <Grid.RenderTransform>
+                <TransformGroup><ScaleTransform/><SkewTransform/><RotateTransform/><TranslateTransform X="-693" Y="-362"/></TransformGroup>
+            </Grid.RenderTransform>
+            <Rectangle x:Name="NitroSL4_0" Width="211.717" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="315.807"/><RotateTransform Angle="245.406"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL4_1" Width="189.276" Height="3" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="710.634"/><RotateTransform Angle="331.504"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL4_2" Width="258.553" Height="3" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="528.871"/><RotateTransform Angle="214.981"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL4_3" Width="118.189" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="601.386"/><RotateTransform Angle="176.981"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL4_4" Width="158.17" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="294.207"/><RotateTransform Angle="274.229"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL4_5" Width="212.601" Height="3" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="704.645"/><RotateTransform Angle="202.571"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL4_6" Width="141.045" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="404.782"/><RotateTransform Angle="251.849"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL4_7" Width="289.866" Height="3" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="344.826"/><RotateTransform Angle="303.156"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL4_8" Width="219.091" Height="3" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="586.369"/><RotateTransform Angle="318.641"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL4_9" Width="279.442" Height="3" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="423.077"/><RotateTransform Angle="299.13"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+        </Grid>
+        <Grid x:Name="NitroTier5" HorizontalAlignment="Center" VerticalAlignment="Center" Width="2300" Height="1350" IsHitTestVisible="False" RenderTransformOrigin="0.5,0.5" DataContext="{Binding Path=DataContext, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+              Opacity="{Binding RPMGaugeNumbers[13].YPos}">
+            <Grid.RenderTransform>
+                <TransformGroup><ScaleTransform/><SkewTransform/><RotateTransform/><TranslateTransform X="-693" Y="-362"/></TransformGroup>
+            </Grid.RenderTransform>
+            <Rectangle x:Name="NitroSL5_0" Width="191.223" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="516.09"/><RotateTransform Angle="323.816"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL5_1" Width="153.509" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="611.581"/><RotateTransform Angle="205.737"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL5_2" Width="213.1" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="385.295"/><RotateTransform Angle="286.822"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL5_3" Width="184.895" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="423.776"/><RotateTransform Angle="231.728"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL5_4" Width="126.557" Height="3" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="643.117"/><RotateTransform Angle="200.936"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL5_5" Width="162.555" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="589.658"/><RotateTransform Angle="327.565"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL5_6" Width="152.255" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="302.761"/><RotateTransform Angle="270.158"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL5_7" Width="253.512" Height="3" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="491.859"/><RotateTransform Angle="228.654"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL5_8" Width="134.917" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="509.409"/><RotateTransform Angle="8.398"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+            <Rectangle x:Name="NitroSL5_9" Width="277.462" Height="2" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" RenderTransformOrigin="0.5,0.5" Fill="{StaticResource NitroSpeedLine_Brush}">
+                <Rectangle.RenderTransform><TransformGroup><ScaleTransform ScaleX="1"/><TranslateTransform X="339.653"/><RotateTransform Angle="290.62"/></TransformGroup></Rectangle.RenderTransform>
+            </Rectangle>
+        </Grid>
+        <!-- SPEEDLINES-END elements -->
+
+<ContentControl HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource A_Style_ContentControl_Speedometer}"/>
 
 	</Grid>
 

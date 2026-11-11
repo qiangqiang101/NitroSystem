@@ -48,10 +48,11 @@ $lic = Join-Path $stage "licenses"
 New-Item -ItemType Directory -Force -Path $lic | Out-Null
 Copy-Item "platform\LICENSE"                          (Join-Path $lic "LICENSE-FH2-Mod-Platform.txt")
 Copy-Item "platform\third_party\minhook\LICENSE.txt"  (Join-Path $lic "LICENSE-MinHook.txt")
+Copy-Item "LICENSE"                                   (Join-Path $lic "LICENSE-NitroSystem.txt")   # this mod's, with NitroSystem II's notice
 Copy-Item "README.md" (Join-Path $stage "README.md")
 
 @"
-FnFNitro $Tag - Fast & Furious nitro for Forza Horizon 2 (Azimuth)
+FnFNitro $Tag - Fast & Furious NOS for Forza Horizon 2 (Azimuth)
 ====================================================================
 
 Close the game first, then copy the azimuth-windows\ folder from this zip into your Azimuth folder
@@ -62,14 +63,17 @@ What is in azimuth-windows\:
   DWrite.dll               the FH2 Mod Platform that loads mods. If you already have a platform
                            from another mod, keep the newer one: skip this file if yours is newer.
 
-The NOS speedometer gauge, the HUD textures and the blue flame effect are inside FnFNitro.dll. The platform
-writes them to the game's mediaoverride folder, which needs Forza Horizon 2 Extra Options to be installed.
+The NOS speedometer gauge, the HUD textures, the blue flame effect and the NOS Kit's icons are inside
+FnFNitro.dll. The platform (2.8.0 or newer) writes them to the game's mediaoverride folder and makes the game
+read it; Forza Horizon 2 Extra Options isn't needed.
 
-Start the game through Azimuth. Hold LB while driving. Settings: Pause > Settings > MODS.
-fh2-mods\platform.log should show "loaded FnFNitro.dll".
+Start the game through Azimuth. Buy a NOS Kit for your car (Garage > Upgrades > Custom upgrade > Engine >
+NOS Kit), then hold LB while driving. Settings: Pause > Settings > MODS (turn off "Require NOS Kit" to give
+every car NOS without buying a kit). fh2-mods\platform.log should show "loaded FnFNitro.dll".
 
 To uninstall, see README.md (the "Uninstalling" section).
-licenses\ holds the licences for the platform and for MinHook, which it contains.
+licenses\ holds this mod's licence (with NitroSystem II's notice) and the licences for the platform and for
+MinHook, which it contains.
 "@ | Set-Content -Path (Join-Path $stage "INSTALL.txt") -Encoding UTF8
 
 # --- Zip it (forward-slash entries, one top folder), then show what went in
