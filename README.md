@@ -28,7 +28,7 @@ Buy a **NOS Kit** for your car in the garage, then hold **LB** (or any button yo
   | Stage 3 NOS | 20 s | 0.30 s per second | 12 000 CR |
   | Stage 4 NOS | 30 s | 0.40 s per second | 24 000 CR |
 
-  Drivatars (with **Drivatar NOS** on) get twice the tank and twice the recharge of the kit on the car you're driving, and no NOS while your car has no kit.
+  Drivatars (with **Drivatar NOS** on) get the same tank and recharge of the kit on the car you're driving, and no NOS while your car has no kit.
 - **Screen effects.** While NOS burns the field of view widens, a pulsing blue vignette glows at the screen edges and blue speed lines fly out from the middle, faster the faster you go. Each can be turned off. (From NitroSystem II.)
 - **NOS gauge on the speedometer.** Both the **analog** and the **digital** speedometers get a four-segment NOS bar that drains as you use NOS, with a glowing tip that follows the leading edge of the fill.
 - **Exhaust flames.** Blue flames come out of your car's real tailpipes while NOS is held, from the first second (the mod drives the game's own backfire effect, at the exhaust positions the car's own model gives).
